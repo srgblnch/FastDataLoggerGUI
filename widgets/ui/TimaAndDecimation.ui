@@ -87,6 +87,11 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>startValue</tabstop>
+  <tabstop>endValue</tabstop>
+  <tabstop>decimationValue</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

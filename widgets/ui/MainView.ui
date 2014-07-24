@@ -112,8 +112,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>756</width>
-                <height>818</height>
+                <width>620</width>
+                <height>624</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout_7">
@@ -141,7 +141,7 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>741</width>
+                <width>620</width>
                 <height>828</height>
                </rect>
               </property>
@@ -207,6 +207,16 @@
    <header>timeanddecimation</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>loadButton</tabstop>
+  <tabstop>replotButton</tabstop>
+  <tabstop>cancelButton</tabstop>
+  <tabstop>plotsTab</tabstop>
+  <tabstop>loops1ScrollArea</tabstop>
+  <tabstop>loops2ScrollArea</tabstop>
+  <tabstop>diagScrollArea</tabstop>
+  <tabstop>generalScrollArea</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

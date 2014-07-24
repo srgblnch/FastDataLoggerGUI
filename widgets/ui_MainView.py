@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/MainView.ui'
 #
-# Created: Tue Jul 22 16:01:21 2014
+# Created: Thu Jul 24 09:39:44 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -70,7 +70,7 @@ class Ui_FastDataLoggerDLLRF(object):
         self.loops2ScrollArea.setWidgetResizable(True)
         self.loops2ScrollArea.setObjectName(_fromUtf8("loops2ScrollArea"))
         self.loops2ScrollAreaWidgetContents = QtGui.QWidget()
-        self.loops2ScrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 756, 818))
+        self.loops2ScrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 620, 624))
         self.loops2ScrollAreaWidgetContents.setObjectName(_fromUtf8("loops2ScrollAreaWidgetContents"))
         self.gridLayout_7 = QtGui.QGridLayout(self.loops2ScrollAreaWidgetContents)
         self.gridLayout_7.setObjectName(_fromUtf8("gridLayout_7"))
@@ -88,7 +88,7 @@ class Ui_FastDataLoggerDLLRF(object):
         self.diagScrollArea.setWidgetResizable(True)
         self.diagScrollArea.setObjectName(_fromUtf8("diagScrollArea"))
         self.diagScrollAreaWidgetContents = QtGui.QWidget()
-        self.diagScrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 741, 828))
+        self.diagScrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 620, 828))
         self.diagScrollAreaWidgetContents.setObjectName(_fromUtf8("diagScrollAreaWidgetContents"))
         self.gridLayout_8 = QtGui.QGridLayout(self.diagScrollAreaWidgetContents)
         self.gridLayout_8.setObjectName(_fromUtf8("gridLayout_8"))
@@ -116,6 +116,13 @@ class Ui_FastDataLoggerDLLRF(object):
         self.retranslateUi(FastDataLoggerDLLRF)
         self.plotsTab.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(FastDataLoggerDLLRF)
+        FastDataLoggerDLLRF.setTabOrder(self.loadButton, self.replotButton)
+        FastDataLoggerDLLRF.setTabOrder(self.replotButton, self.cancelButton)
+        FastDataLoggerDLLRF.setTabOrder(self.cancelButton, self.plotsTab)
+        FastDataLoggerDLLRF.setTabOrder(self.plotsTab, self.loops1ScrollArea)
+        FastDataLoggerDLLRF.setTabOrder(self.loops1ScrollArea, self.loops2ScrollArea)
+        FastDataLoggerDLLRF.setTabOrder(self.loops2ScrollArea, self.diagScrollArea)
+        FastDataLoggerDLLRF.setTabOrder(self.diagScrollArea, self.generalScrollArea)
 
     def retranslateUi(self, FastDataLoggerDLLRF):
         FastDataLoggerDLLRF.setWindowTitle(QtGui.QApplication.translate("FastDataLoggerDLLRF", "ctrffdl", None, QtGui.QApplication.UnicodeUTF8))

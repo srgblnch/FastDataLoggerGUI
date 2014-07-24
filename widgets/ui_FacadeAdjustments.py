@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/FacadeAdjustments.ui'
 #
-# Created: Wed Jul 23 12:50:22 2014
+# Created: Thu Jul 24 09:39:30 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -58,6 +58,8 @@ class Ui_facadeAdjustments(object):
 
         self.retranslateUi(facadeAdjustments)
         QtCore.QMetaObject.connectSlotsByName(facadeAdjustments)
+        facadeAdjustments.setTabOrder(self.cavityVoltsMValue, self.cavityVoltsNValue)
+        facadeAdjustments.setTabOrder(self.cavityVoltsNValue, self.buttonBox)
 
     def retranslateUi(self, facadeAdjustments):
         facadeAdjustments.setWindowTitle(QtGui.QApplication.translate("facadeAdjustments", "Form", None, QtGui.QApplication.UnicodeUTF8))

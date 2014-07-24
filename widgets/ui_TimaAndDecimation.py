@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/TimaAndDecimation.ui'
 #
-# Created: Wed Jul 23 16:38:28 2014
+# Created: Thu Jul 24 09:39:53 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -49,6 +49,8 @@ class Ui_timeAndDecimation(object):
 
         self.retranslateUi(timeAndDecimation)
         QtCore.QMetaObject.connectSlotsByName(timeAndDecimation)
+        timeAndDecimation.setTabOrder(self.startValue, self.endValue)
+        timeAndDecimation.setTabOrder(self.endValue, self.decimationValue)
 
     def retranslateUi(self, timeAndDecimation):
         timeAndDecimation.setWindowTitle(QtGui.QApplication.translate("timeAndDecimation", "Form", None, QtGui.QApplication.UnicodeUTF8))

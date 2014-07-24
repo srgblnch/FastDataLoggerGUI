@@ -123,6 +123,11 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>cavityVoltsMValue</tabstop>
+  <tabstop>cavityVoltsNValue</tabstop>
+  <tabstop>buttonBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
