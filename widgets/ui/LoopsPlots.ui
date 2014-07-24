@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Loops</class>
+ <widget class="TaurusWidget" name="Loops">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>612</width>
+    <height>616</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="TaurusPlot" name="topLeft"/>
+   </item>
+   <item row="1" column="0">
+    <widget class="TaurusPlot" name="middleLeft"/>
+   </item>
+   <item row="1" column="1">
+    <widget class="TaurusPlot" name="middleRight"/>
+   </item>
+   <item row="0" column="1">
+    <widget class="TaurusPlot" name="topRight"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="TaurusPlot" name="bottomLeft"/>
+   </item>
+   <item row="2" column="1">
+    <widget class="TaurusPlot" name="bottomRight"/>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>TaurusWidget</class>
+   <extends>QWidget</extends>
+   <header>taurus.qt.qtgui.container</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TaurusPlot</class>
+   <extends>QwtPlot</extends>
+   <header>taurus.qt.qtgui.plot</header>
+  </customwidget>
+  <customwidget>
+   <class>QwtPlot</class>
+   <extends>QFrame</extends>
+   <header>qwt_plot.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
