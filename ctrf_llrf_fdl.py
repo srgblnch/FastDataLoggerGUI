@@ -40,6 +40,7 @@ from taurus.qt.qtgui.base.taurusbase import TaurusBaseComponent
 from taurus.qt.qtgui.resource import getIcon, getThemeIcon
 from taurus.qt.qtgui.plot import CurveAppearanceProperties
 import taurus
+from PyTango import DevFailed
 
 
 from ui_MainView import Ui_FastDataLoggerDLLRF
@@ -490,19 +491,29 @@ class FacadeManager(Logger,Qt.QObject):
                FacadeAttrs[field].has_key('n'):
                 mAttr = FacadeAttrs[field]['m']
                 nAttr = FacadeAttrs[field]['n']
-                try:
-                    m = self.facadeDev[mAttr].value
-                    n = self.facadeDev[nAttr].value
-                except Exception,e:
-                    self.warning("Wasn't possible to get the facade fits: "\
-                                 "%s"%(e))
-                    #tag it to allow the user to manually adjust
-                    requiresFacadeAdjustments = True
-                else:
+                m = self.readAttr(mAttr)
+                n = self.readAttr(nAttr)
+                if m != None and n != None:
                     self.info("For signal %s: m = %g, n = %g"%(field,m,n))
                     self._fromFacade[field]['m'] = m
                     self._fromFacade[field]['n'] = n
+                else:
+                    requiresFacadeAdjustments = True
         return requiresFacadeAdjustments
+
+    def readAttr(self,attrName):
+        try:
+            return self.facadeDev[attrName].value
+        except DevFailed,e:
+            if len(e.args) == 2:
+                msg = e[1].desc
+            else:
+                msg = e[0].desc
+            self.warning("Not possible to read %s's value (%s)"%(attrName,msg))
+        except Exception,e:
+            self.error("Wasn't possible to get the facade's attribute %s: "\
+                                 "%s"%(attrName,e))
+        return None
 
     def doFacadeAdjusments(self):
         if self._facadeAdjustments == None:
