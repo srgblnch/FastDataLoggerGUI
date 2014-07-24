@@ -25,7 +25,6 @@
 
 import os,sys
 import numpy as np
-import scipy.signal
 
 #The widgets are stored in a subdirectory and 
 #needs to be added to the pythonpath
@@ -571,11 +570,20 @@ class Plotter(Logger):
         Qt.QObject.connect(self._parent.ui.replotButton,
                            Qt.SIGNAL('clicked(bool)'),
                            self.doPlots)
+        Qt.QObject.connect(self._parent.ui.timeAndDecimation._ui.startValue,
+                           Qt.SIGNAL('editingFinished()'),
+                           self.doPlots)
+        Qt.QObject.connect(self._parent.ui.timeAndDecimation._ui.endValue,
+                           Qt.SIGNAL('editingFinished()'),
+                           self.doPlots)
+        Qt.QObject.connect(self._parent.ui.timeAndDecimation._ui.decimationValue,
+                           Qt.SIGNAL('editingFinished()'),
+                           self.doPlots)
         #Remember to populate this with exactly the same keys than the parsed
         self.SignalPlots = {'CavityVolts':
                             {'plot':self._parent.ui.loops1Plots._ui.topLeft,
                              'curveProperties':CurveAppearanceProperties(
-                                                      sColor=Qt.QColor('Blue'))
+                                                      lColor=Qt.QColor('Blue'))
                             }
                            }
     @property
@@ -614,9 +622,7 @@ class Plotter(Logger):
                 self.debug("With a end display at %g ms, "\
                           "point %d the last displayed"
                           %(self._endDisplay,endPoint))
-                y = scipy.signal.decimate(\
-                                  self._loops[signalName][startPoint:endPoint],
-                                  self._decimation)
+                y = self._loops[signalName][startPoint:endPoint:self._decimation]
                 x = np.linspace(self._startDisplay,self._endDisplay,y.size)
                 signal = {'title':signalName,'x':x,'y':y}
                 m,n = self._facade.getMandNs(signalName)
