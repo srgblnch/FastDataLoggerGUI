@@ -30,36 +30,40 @@
       </property>
       <layout class="QGridLayout" name="gridLayout">
        <item row="0" column="0">
-        <widget class="QPushButton" name="loadButton">
-         <property name="text">
-          <string>Load Data</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QPushButton" name="loadButton">
+           <property name="text">
+            <string>Load Data</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>356</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="timeAndDecimation" name="timeAndDecimation"/>
+         </item>
+         <item>
+          <widget class="QPushButton" name="replotButton">
+           <property name="text">
+            <string>Replot</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
-       <item row="0" column="1">
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>356</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="0" column="2">
-        <widget class="timeAndDecimation" name="timeAndDecimation"/>
-       </item>
-       <item row="0" column="3">
-        <widget class="QPushButton" name="replotButton">
-         <property name="text">
-          <string>Replot</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0" colspan="4">
+       <item row="1" column="0">
         <widget class="QTabWidget" name="plotsTab">
          <property name="currentIndex">
           <number>0</number>
@@ -80,7 +84,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>756</width>
-                <height>823</height>
+                <height>818</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout_6">
@@ -109,7 +113,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>756</width>
-                <height>823</height>
+                <height>818</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout_7">
@@ -153,15 +157,26 @@
          </widget>
         </widget>
        </item>
-       <item row="2" column="0" colspan="4">
-        <widget class="QProgressBar" name="progressBar">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="value">
-          <number>100</number>
-         </property>
-        </widget>
+       <item row="2" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QProgressBar" name="progressBar">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="value">
+            <number>100</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="cancelButton">
+           <property name="text">
+            <string>Cancel</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>

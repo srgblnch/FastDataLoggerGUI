@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui/TimaAndDecimation.ui'
+# Form implementation generated from reading ui file 'widgets/ui/TimaAndDecimation.ui'
 #
-# Created: Fri Jul 11 15:24:48 2014
+# Created: Wed Jul 23 16:38:28 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -40,12 +40,12 @@ class Ui_timeAndDecimation(object):
         self.stopLabel = QtGui.QLabel(timeAndDecimation)
         self.stopLabel.setObjectName(_fromUtf8("stopLabel"))
         self.gridLayout.addWidget(self.stopLabel, 1, 0, 1, 1)
-        self.stopValue = QtGui.QDoubleSpinBox(timeAndDecimation)
-        self.stopValue.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
-        self.stopValue.setMaximum(411.0)
-        self.stopValue.setProperty("value", 411.0)
-        self.stopValue.setObjectName(_fromUtf8("stopValue"))
-        self.gridLayout.addWidget(self.stopValue, 1, 1, 1, 1)
+        self.endValue = QtGui.QDoubleSpinBox(timeAndDecimation)
+        self.endValue.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.endValue.setMaximum(411.0)
+        self.endValue.setProperty("value", 411.0)
+        self.endValue.setObjectName(_fromUtf8("endValue"))
+        self.gridLayout.addWidget(self.endValue, 1, 1, 1, 1)
 
         self.retranslateUi(timeAndDecimation)
         QtCore.QMetaObject.connectSlotsByName(timeAndDecimation)
@@ -56,6 +56,6 @@ class Ui_timeAndDecimation(object):
         self.startValue.setSuffix(QtGui.QApplication.translate("timeAndDecimation", " ms", None, QtGui.QApplication.UnicodeUTF8))
         self.startLabel.setText(QtGui.QApplication.translate("timeAndDecimation", "Start Display [0,411] ms", None, QtGui.QApplication.UnicodeUTF8))
         self.stopLabel.setText(QtGui.QApplication.translate("timeAndDecimation", "End Display [0,411] ms", None, QtGui.QApplication.UnicodeUTF8))
-        self.stopValue.setSuffix(QtGui.QApplication.translate("timeAndDecimation", " ms", None, QtGui.QApplication.UnicodeUTF8))
+        self.endValue.setSuffix(QtGui.QApplication.translate("timeAndDecimation", " ms", None, QtGui.QApplication.UnicodeUTF8))
 
 from taurus.qt.qtgui.panel import TaurusWidget

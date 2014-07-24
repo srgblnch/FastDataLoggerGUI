@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui/MainView.ui'
+# Form implementation generated from reading ui file 'widgets/ui/MainView.ui'
 #
-# Created: Fri Jul 11 15:22:58 2014
+# Created: Tue Jul 22 16:01:21 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -28,17 +28,20 @@ class Ui_FastDataLoggerDLLRF(object):
         self.scrollAreaWidgetContents.setObjectName(_fromUtf8("scrollAreaWidgetContents"))
         self.gridLayout = QtGui.QGridLayout(self.scrollAreaWidgetContents)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
+        self.horizontalLayout_2 = QtGui.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
         self.loadButton = QtGui.QPushButton(self.scrollAreaWidgetContents)
         self.loadButton.setObjectName(_fromUtf8("loadButton"))
-        self.gridLayout.addWidget(self.loadButton, 0, 0, 1, 1)
+        self.horizontalLayout_2.addWidget(self.loadButton)
         spacerItem = QtGui.QSpacerItem(356, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.gridLayout.addItem(spacerItem, 0, 1, 1, 1)
+        self.horizontalLayout_2.addItem(spacerItem)
         self.timeAndDecimation = timeAndDecimation(self.scrollAreaWidgetContents)
         self.timeAndDecimation.setObjectName(_fromUtf8("timeAndDecimation"))
-        self.gridLayout.addWidget(self.timeAndDecimation, 0, 2, 1, 1)
+        self.horizontalLayout_2.addWidget(self.timeAndDecimation)
         self.replotButton = QtGui.QPushButton(self.scrollAreaWidgetContents)
         self.replotButton.setObjectName(_fromUtf8("replotButton"))
-        self.gridLayout.addWidget(self.replotButton, 0, 3, 1, 1)
+        self.horizontalLayout_2.addWidget(self.replotButton)
+        self.gridLayout.addLayout(self.horizontalLayout_2, 0, 0, 1, 1)
         self.plotsTab = QtGui.QTabWidget(self.scrollAreaWidgetContents)
         self.plotsTab.setObjectName(_fromUtf8("plotsTab"))
         self.loops1Tab = QtGui.QWidget()
@@ -49,7 +52,7 @@ class Ui_FastDataLoggerDLLRF(object):
         self.loops1ScrollArea.setWidgetResizable(True)
         self.loops1ScrollArea.setObjectName(_fromUtf8("loops1ScrollArea"))
         self.loops1ScrollAreaWidgetContents = QtGui.QWidget()
-        self.loops1ScrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 756, 823))
+        self.loops1ScrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 756, 818))
         self.loops1ScrollAreaWidgetContents.setObjectName(_fromUtf8("loops1ScrollAreaWidgetContents"))
         self.gridLayout_6 = QtGui.QGridLayout(self.loops1ScrollAreaWidgetContents)
         self.gridLayout_6.setObjectName(_fromUtf8("gridLayout_6"))
@@ -67,7 +70,7 @@ class Ui_FastDataLoggerDLLRF(object):
         self.loops2ScrollArea.setWidgetResizable(True)
         self.loops2ScrollArea.setObjectName(_fromUtf8("loops2ScrollArea"))
         self.loops2ScrollAreaWidgetContents = QtGui.QWidget()
-        self.loops2ScrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 756, 823))
+        self.loops2ScrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 756, 818))
         self.loops2ScrollAreaWidgetContents.setObjectName(_fromUtf8("loops2ScrollAreaWidgetContents"))
         self.gridLayout_7 = QtGui.QGridLayout(self.loops2ScrollAreaWidgetContents)
         self.gridLayout_7.setObjectName(_fromUtf8("gridLayout_7"))
@@ -95,12 +98,18 @@ class Ui_FastDataLoggerDLLRF(object):
         self.diagScrollArea.setWidget(self.diagScrollAreaWidgetContents)
         self.gridLayout_4.addWidget(self.diagScrollArea, 0, 0, 1, 1)
         self.plotsTab.addTab(self.diagTab, _fromUtf8(""))
-        self.gridLayout.addWidget(self.plotsTab, 1, 0, 1, 4)
+        self.gridLayout.addWidget(self.plotsTab, 1, 0, 1, 1)
+        self.horizontalLayout = QtGui.QHBoxLayout()
+        self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
         self.progressBar = QtGui.QProgressBar(self.scrollAreaWidgetContents)
         self.progressBar.setEnabled(False)
         self.progressBar.setProperty("value", 100)
         self.progressBar.setObjectName(_fromUtf8("progressBar"))
-        self.gridLayout.addWidget(self.progressBar, 2, 0, 1, 4)
+        self.horizontalLayout.addWidget(self.progressBar)
+        self.cancelButton = QtGui.QPushButton(self.scrollAreaWidgetContents)
+        self.cancelButton.setObjectName(_fromUtf8("cancelButton"))
+        self.horizontalLayout.addWidget(self.cancelButton)
+        self.gridLayout.addLayout(self.horizontalLayout, 2, 0, 1, 1)
         self.generalScrollArea.setWidget(self.scrollAreaWidgetContents)
         self.gridLayout_5.addWidget(self.generalScrollArea, 0, 0, 1, 1)
 
@@ -115,6 +124,7 @@ class Ui_FastDataLoggerDLLRF(object):
         self.plotsTab.setTabText(self.plotsTab.indexOf(self.loops1Tab), QtGui.QApplication.translate("FastDataLoggerDLLRF", "Loops1", None, QtGui.QApplication.UnicodeUTF8))
         self.plotsTab.setTabText(self.plotsTab.indexOf(self.loops2Tab), QtGui.QApplication.translate("FastDataLoggerDLLRF", "Loops2", None, QtGui.QApplication.UnicodeUTF8))
         self.plotsTab.setTabText(self.plotsTab.indexOf(self.diagTab), QtGui.QApplication.translate("FastDataLoggerDLLRF", "Diagnostics", None, QtGui.QApplication.UnicodeUTF8))
+        self.cancelButton.setText(QtGui.QApplication.translate("FastDataLoggerDLLRF", "Cancel", None, QtGui.QApplication.UnicodeUTF8))
 
 from loops import Loops
 from taurus.qt.qtgui.panel import TaurusWidget
