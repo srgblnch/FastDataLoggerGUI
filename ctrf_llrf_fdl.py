@@ -45,7 +45,7 @@ from PyTango import DevFailed
 
 from ui_MainView import Ui_FastDataLoggerDLLRF
 from fileloader import fileLoader
-from FdlFileParser import LoopsFile,DiagnosticsFile,FacadeAttrs
+from FdlFileParser import LoopsFile,DiagnosticsFile,SignalFields
 from facadeadjustments import facadeAdjustments
 
 FACADES_SERVERNAME = 'LLRFFacade'
@@ -476,21 +476,21 @@ class FacadeManager(Logger,Qt.QObject):
 
     def _prepareFacadeParams(self):
         self._fromFacade = {}
-        for field in FacadeAttrs.keys():
+        for field in SignalFields.keys():
             self._fromFacade[field] = {}
-            if FacadeAttrs[field].has_key('m') and \
-               FacadeAttrs[field].has_key('n'):
+            if SignalFields[field].has_key('m') and \
+               SignalFields[field].has_key('n'):
                 self._fromFacade[field]['m'] = 1
                 self._fromFacade[field]['n'] = 0
             #TODO: quadratics
 
     def populateFacadeParams(self):
         requiresFacadeAdjustments = False
-        for field in FacadeAttrs.keys():
-            if FacadeAttrs[field].has_key('m') and \
-               FacadeAttrs[field].has_key('n'):
-                mAttr = FacadeAttrs[field]['m']
-                nAttr = FacadeAttrs[field]['n']
+        for field in SignalFields.keys():
+            if SignalFields[field].has_key('m') and \
+               SignalFields[field].has_key('n'):
+                mAttr = SignalFields[field]['m']
+                nAttr = SignalFields[field]['n']
                 m = self.readAttr(mAttr)
                 n = self.readAttr(nAttr)
                 if m != None and n != None:
@@ -590,13 +590,44 @@ class Plotter(Logger):
         Qt.QObject.connect(self._parent.ui.timeAndDecimation._ui.decimationValue,
                            Qt.SIGNAL('editingFinished()'),
                            self.doPlots)
-        #Remember to populate this with exactly the same keys than the parsed
-        self.SignalPlots = {'CavityVolts':
-                            {'plot':self._parent.ui.loops1Plots._ui.topLeft,
-                             'curveProperties':CurveAppearanceProperties(
-                                                      lColor=Qt.QColor('Blue'))
+        #once created the object and with access to the patent's widgets
+        #a map with the locations can be set up
+        loops1 = self._parent.ui.loops1Plots._ui
+        loops2 = self._parent.ui.loops2Plots._ui
+        diag = self._parent.ui.diagnosticsPlots._ui
+        self._widgetsMap = {'Loops1':{'topLeft':loops1.topLeft,
+                                      'topRight':loops1.topRight,
+                                      'middleLeft':loops1.middleLeft,
+                                      'middleRight':loops1.middleRight,
+                                      'bottomLeft':loops1.bottomLeft,
+                                      'bottomRight':loops1.bottomRight},
+                            'Loops2':{'topLeft':loops2.topLeft,
+                                      'topRight':loops2.topRight,
+                                      'middleLeft':loops2.middleLeft,
+                                      'middleRight':loops2.middleRight,
+                                      'bottomLeft':loops2.bottomLeft,
+                                      'bottomRight':loops2.bottomRight},
+                            'Diag':{'topLeft':diag.topLeft,
+                                    'topRight':diag.topRight,
+                                    'middleUpLeft':diag.middleUpLeft,
+                                    'middleUpRight':diag.middleUpRight,
+                                    'middleDownLeft':diag.middleDownLeft,
+                                    'middleDownRight':diag.middleDownRight,
+                                    'bottomLeft':diag.bottomLeft,
+                                    'bottomRight':diag.bottomRight}
                             }
-                           }
+        #Those locations must correspond with FdlFileParser.SignalFields
+        #within each signal the key 'gui' must have a 'tab' and 'plot' keys
+        #that indicates a widget on this dictionary
+        
+        
+#        #Remember to populate this with exactly the same keys than the parsed
+#        self.SignalPlots = {'CavityVolts':
+#                            {'plot':self._parent.ui.loops1Plots._ui.topLeft,
+#                             'curveProperties':CurveAppearanceProperties(
+#                                                      lColor=Qt.QColor('Blue'))
+#                            }
+#                           }
     @property
     def startDisplay(self):
         return self._parent.ui.timeAndDecimation._ui.startValue.value()
@@ -640,8 +671,11 @@ class Plotter(Logger):
                 if m != None and n != None:
                     y = (y-n)/m
                     signal = {'title':signalName,'x':x,'y':y}
-                self.SignalPlots[signalName]['plot'].attachRawData(signal,
-                               self.SignalPlots[signalName]['curveProperties'])
+                tab = SignalFields[signalName]['gui']['tab']
+                plot = SignalFields[signalName]['gui']['plot']
+                color = SignalFields[signalName]['gui']['color']
+                curveProp = CurveAppearanceProperties(lColor=Qt.QColor(color))
+                self._widgetsMap[tab][plot].attachRawData(signal,curveProp)
     def plotDiag(self):
         pass
 

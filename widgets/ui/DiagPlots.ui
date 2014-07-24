@@ -14,29 +14,29 @@
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="1">
+    <widget class="TaurusPlot" name="topRight"/>
+   </item>
+   <item row="2" column="1">
+    <widget class="TaurusPlot" name="middleDownRight"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="TaurusPlot" name="middleDownLeft"/>
+   </item>
    <item row="0" column="0">
     <widget class="TaurusPlot" name="topLeft"/>
    </item>
-   <item row="3" column="1">
-    <widget class="TaurusPlot" name="bottomRight"/>
-   </item>
    <item row="1" column="0">
-    <widget class="TaurusPlot" name="middleTopLeft"/>
+    <widget class="TaurusPlot" name="middleUpLeft"/>
    </item>
    <item row="3" column="0">
     <widget class="TaurusPlot" name="bottomLeft"/>
    </item>
    <item row="1" column="1">
-    <widget class="TaurusPlot" name="middleTopRight"/>
+    <widget class="TaurusPlot" name="middleUpRight"/>
    </item>
-   <item row="0" column="1">
-    <widget class="TaurusPlot" name="topRight"/>
-   </item>
-   <item row="2" column="0">
-    <widget class="TaurusPlot" name="middleBottomLeft"/>
-   </item>
-   <item row="2" column="1">
-    <widget class="TaurusPlot" name="middleBottomRight"/>
+   <item row="3" column="1">
+    <widget class="TaurusPlot" name="bottomRight"/>
    </item>
   </layout>
  </widget>

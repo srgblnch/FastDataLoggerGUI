@@ -40,6 +40,24 @@ from copy import copy
 SEPARATOR = 0x7FFF
 LOAD_ERROR_RATE = 0.01
 
+#General description of the signals. This wants to be a single point 
+#configuration place. This dictionary contains all the output key names, and
+#their item contents are dictionaries also, with:
+# - some keys used to prepare those signals, like I&Q (ampl=sqrt(I^2+Q^2))
+# - some keys to indicate facade's conversion attributes,
+#   like m&n for linear fits or c&o when quadratic fits (couple and offset)
+# - key to indicate (even this module doesn't know about the gui) where each 
+#   of the signals is expected to be plotted.
+
+SignalFields = {'CavityVolts':{'I':'Cav_I','Q':'Cav_Q',
+                               'm':'CAV_VOLT_KV_m',
+                               'n':'CAV_VOLT_KV_n',
+                               'gui':{'tab':'Loops1',
+                                      'plot':'topLeft',
+                                      'color':'Blue'}
+                              },
+               }
+
 class FdlFile(Logger,Qt.QObject):
     step = QtCore.pyqtSignal()
     done = QtCore.pyqtSignal()
@@ -248,12 +266,6 @@ LoopsFields = {'separator':     0,'FwCavPhase':    1,#0
                'FwCav_I':      26,'FwCav_Q':      27,#13
                'TuningDephase':28,'CavityPhase':  29,#14
                'Reference_I':  30,'Reference_Q':  31}#15
-#for elements with I&Q, its amplitude must be calculated: sqrt(I^2+Q^2)
-#for elements with Facade conversion, its formula must be applied.
-SignalFields = {'CavityVolts':{'I':'Cav_I','Q':'Cav_Q'}}
-FacadeAttrs =  {'CavityVolts':{'m':'CAV_VOLT_KV_m',
-                               'n':'CAV_VOLT_KV_n'}
-               }
 
 class LoopsFile(FdlFile):
     def __init__(self,filename,loadErrorRate=LOAD_ERROR_RATE):
