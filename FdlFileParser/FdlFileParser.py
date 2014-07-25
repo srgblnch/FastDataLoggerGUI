@@ -54,9 +54,11 @@ LOAD_ERROR_RATE = 0.01
 #                    - calculate x**2/10e8/10**(c)+o
 #                      where 'x' is another signal and c&o facades attr names
 #                      this calculation will be made in the gui
-# - signals with 'f' and 'h':
+# - signals with 'f', 'h' and 'd':
 #                    - calculate using a formula with other fields, and left
-#                      the result in 'h'
+#                      the result in 'h'. It also has a dependency list with a 
+#                      list of other keys it need to correctly do its own
+#                      calculation.
 # - signals with 'gui' key: its items describes locations ('tab','plot' and 
 #                      'y' axis) and colour to plot  this signal in the 
 #                      interface.
@@ -64,34 +66,57 @@ LOAD_ERROR_RATE = 0.01
 # here in order to have a single point key naming to know where to modify if
 # user request any change.
 
-SignalFields = {'CavVolt_mV':    {'I':'Cav_I',  'Q':'Cav_Q'  },
-                'FwCav_mV':      {'I':'FwCav_I','Q':'FwCav_Q'},
-                'RvCav_mV':      {'I':'RvCav_I','Q':'RvCav_Q'},
-                'CavVolt_kV':{'x':'CavVolt_mV',
-                                  'm':'CAV_VOLT_KV_m',
-                                  'n':'CAV_VOLT_KV_n',
-                                  'gui':{'tab':'Loops1',
-                                         'plot':'topLeft',
-                                         'axis':Qwt5.QwtPlot.Axis(0),
-                                         'color':'Blue'}},
-                'PDisCav_kW':    {'x':'CavVolt_mV',
-                                  'c':'PDisCav_c',
-                                  'o':'PDisCav_o',},
-                'FwCav_kW':      {'x':'FwCav_mV',
-                                  'c':'FwCav_kW_c',
-                                  'o':'FwCav_kW_o'},
-                'RvCav_kW':      {'x':'RvCav_mV',
-                                  'c':'RvCav_kW_c',
-                                  'o':'RvCav_kW_o',},
-                'PBeam_kW':      {'f':'FwCav_kW-RvCav_kW-PDisCav_kW',
-                                  'h':'loops',},
-                'BeamPhase':     {'f':\
+#pure file signal description fields
+I = 'I'
+Q = 'Q'
+#signals with linear of quadratic fits using facade's attrs
+vble = 'x'
+slope = 'm'
+loffset = 'n'
+couple = 'c'
+qoffset = 'o'
+#formula evaluation signals
+formula = 'f'
+handler = 'h'
+depend = 'd'
+#descriptions for the graphical interface
+gui = 'gui'
+tab = 'tab'
+plot = 'plot'
+axis = 'axis'
+color='color'
+
+SignalFields = {'CavVolt_mV':    {I:'Cav_I',  Q:'Cav_Q'  },
+                'FwCav_mV':      {I:'FwCav_I',Q:'FwCav_Q'},
+                'RvCav_mV':      {I:'RvCav_I',Q:'RvCav_Q'},
+                'CavVolt_kV':    {vble:   'CavVolt_mV',
+                                  slope:  'CAV_VOLT_KV_m',
+                                  loffset:'CAV_VOLT_KV_n',
+                                  gui:    {tab:'Loops1',
+                                           plot:'topLeft',
+                                           axis:Qwt5.QwtPlot.Axis(0),
+                                           color:'Blue'}},
+                'PDisCav_kW':    {vble:   'CavVolt_mV',
+                                  couple: 'PDisCav_c',
+                                  qoffset:'PDisCav_o',},
+                'FwCav_kW':      {vble:   'FwCav_mV',
+                                  couple: 'FwCav_kW_c',
+                                  qoffset:'FwCav_kW_o'},
+                'RvCav_kW':      {vble:   'RvCav_mV',
+                                  couple: 'RvCav_kW_c',
+                                  qoffset:'RvCav_kW_o',},
+                'PBeam_kW':      {formula:'FwCav_kW-RvCav_kW-PDisCav_kW',
+                                  handler:'loops',
+                                  depend: ['FwCav_kW','RvCav_kW',
+                                           'PDisCav_kW']},
+                'BeamPhase':     {formula:\
                      '180-arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV)*180/pi',
-                                  'h':'loops',
-                                  'gui':{'tab':'Loops1',
-                                         'plot':'topLeft',
-                                         'axis':Qwt5.QwtPlot.Axis(1),
-                                         'color':'Red'}}
+                                  handler:'loops',
+                                  depend: ['PBeam_kW','CavVolt_kV'],
+                                  gui:    {tab:'Loops1',
+                                           plot:'topLeft',
+                                           axis:Qwt5.QwtPlot.Axis(1),
+                                           color:'Red'}}
                }
 
 class FdlFile(Logger,Qt.QObject):
@@ -149,7 +174,8 @@ class FdlFile(Logger,Qt.QObject):
                          "already in progress")
             return
         if self._processThread == None:
-            self._processThread = Thread(target=self.doProcessThreading)
+            self._processThread = Thread(target=self.doProcessThreading,
+                                         name=self._name+"Thread")
         if self._interrupt.isSet():
             self._interrupt.clear()
         self._processThread.start()
@@ -305,6 +331,7 @@ class LoopsFile(FdlFile):
     def __init__(self,filename,loadErrorRate=LOAD_ERROR_RATE):
         self._fields = LoopsFields
         FdlFile.__init__(self,filename)
+        self._name = 'Loops'
     ####
     #--- preparation area
     def prepareSignalSet(self):
@@ -341,6 +368,7 @@ class DiagnosticsFile(FdlFile):
     def __init__(self,filename,loadErrorRate=LOAD_ERROR_RATE):
         self._fields = DiagFields
         FdlFile.__init__(self,filename,loadErrorRate)
+        self._name = 'Diag'
     ####
     #--- preparation area
     def prepareSignalSet(self):
