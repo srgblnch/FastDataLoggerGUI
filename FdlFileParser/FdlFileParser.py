@@ -32,10 +32,11 @@
 from taurus.core.util import Logger
 import numpy as np
 import scipy as sp
-from taurus.external.qt import Qt,QtGui,QtCore
+from taurus.external.qt import Qt,QtGui,QtCore,Qwt5
 from threading import Thread,Event
 from math import sqrt
 from copy import copy
+import traceback
 
 SEPARATOR = 0x7FFF
 LOAD_ERROR_RATE = 0.01
@@ -43,19 +44,54 @@ LOAD_ERROR_RATE = 0.01
 #General description of the signals. This wants to be a single point 
 #configuration place. This dictionary contains all the output key names, and
 #their item contents are dictionaries also, with:
-# - some keys used to prepare those signals, like I&Q (ampl=sqrt(I^2+Q^2))
-# - some keys to indicate facade's conversion attributes,
-#   like m&n for linear fits or c&o when quadratic fits (couple and offset)
-# - key to indicate (even this module doesn't know about the gui) where each 
-#   of the signals is expected to be plotted.
+# - signals with I&Q keys: calculate sqrt(I^2+Q^2)
+#                    where items in I&Q are file fields (LoopsFiels/DiagFields)
+# - signals with 'x' and m&n keys: 
+#                    - calculate (x-n)/m
+#                      where 'x' is another signal and m&n facades attr names
+#                      this calculation will be made in the gui
+# - signals with 'x' and c&o keys (couple and offset): 
+#                    - calculate x**2/10e8/10**(c)+o
+#                      where 'x' is another signal and c&o facades attr names
+#                      this calculation will be made in the gui
+# - signals with 'f' and 'h':
+#                    - calculate using a formula with other fields, and left
+#                      the result in 'h'
+# - signals with 'gui' key: its items describes locations ('tab','plot' and 
+#                      'y' axis) and colour to plot  this signal in the 
+#                      interface.
+# Even this module doesn't know about the gui, this last key has been set up
+# here in order to have a single point key naming to know where to modify if
+# user request any change.
 
-SignalFields = {'CavityVolts':{'I':'Cav_I','Q':'Cav_Q',
-                               'm':'CAV_VOLT_KV_m',
-                               'n':'CAV_VOLT_KV_n',
-                               'gui':{'tab':'Loops1',
-                                      'plot':'topLeft',
-                                      'color':'Blue'}
-                              },
+SignalFields = {'CavVolt_mV':    {'I':'Cav_I',  'Q':'Cav_Q'  },
+                'FwCav_mV':      {'I':'FwCav_I','Q':'FwCav_Q'},
+                'RvCav_mV':      {'I':'RvCav_I','Q':'RvCav_Q'},
+                'CavVolt_kV':{'x':'CavVolt_mV',
+                                  'm':'CAV_VOLT_KV_m',
+                                  'n':'CAV_VOLT_KV_n',
+                                  'gui':{'tab':'Loops1',
+                                         'plot':'topLeft',
+                                         'axis':Qwt5.QwtPlot.Axis(0),
+                                         'color':'Blue'}},
+                'PDisCav_kW':    {'x':'CavVolt_mV',
+                                  'c':'PDisCav_c',
+                                  'o':'PDisCav_o',},
+                'FwCav_kW':      {'x':'FwCav_mV',
+                                  'c':'FwCav_kW_c',
+                                  'o':'FwCav_kW_o'},
+                'RvCav_kW':      {'x':'RvCav_mV',
+                                  'c':'RvCav_kW_c',
+                                  'o':'RvCav_kW_o',},
+                'PBeam_kW':      {'f':'FwCav_kW-RvCav_kW-PDisCav_kW',
+                                  'h':'loops',},
+                'BeamPhase':     {'f':\
+                     '180-arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV)*180/pi',
+                                  'h':'loops',
+                                  'gui':{'tab':'Loops1',
+                                         'plot':'topLeft',
+                                         'axis':Qwt5.QwtPlot.Axis(1),
+                                         'color':'Red'}}
                }
 
 class FdlFile(Logger,Qt.QObject):
@@ -101,8 +137,6 @@ class FdlFile(Logger,Qt.QObject):
     
     def _prepare(self):
         self.prepareSignalSet()
-        #for i in range(1,self._nsignals):
-        #    self._signals[self._fields[i]] = []#FIXME: better a np structure
     #--- done preparation area
     ####
     
@@ -127,10 +161,6 @@ class FdlFile(Logger,Qt.QObject):
             while not (self._isEndOfFile() or self._interrupt.isSet()):
                 if self._isCompleteSignalSet():
                     self._completeSignalSets += 1
-                    #for i in range(1,self._nsignals):
-                    #    self._signals[self._fields[i]].\
-                    #          append(self._values[self._iterator.iterindex+i])
-                    #    #FIXME: This eats the memory!!!
                     self.processSignalSet()
                     self._nextSeparator()
                 else:
@@ -167,10 +197,12 @@ class FdlFile(Logger,Qt.QObject):
             else:
                 self.aborted.emit()
                 self.warning("Process aborted: %d%%"%(self._percentage))
+            return True
         except Exception,e:
             self.error("file process cannot be completed! Exception: %s"%(e))
-            self.finish.emit()
-        return True
+            traceback.print_exc()
+            self.aborted.emit()
+            return False
     #--- done processing area
     ####
     
@@ -181,8 +213,10 @@ class FdlFile(Logger,Qt.QObject):
         self._interrupt.set()
     
     def postprocess(self):
-        for k in self._signals.keys():
-            self._signals[k] = np.array(self._signals[k])
+        for signal in self._signals.keys():
+            if SignalFields[signal].has_key('I') and \
+                                             SignalFields[signal].has_key('Q'):
+                self._signals[signal] = np.array(self._signals[signal])
 
     def getSignal(self,key):
         if not key in self._signals.keys():
@@ -275,7 +309,8 @@ class LoopsFile(FdlFile):
     #--- preparation area
     def prepareSignalSet(self):
         for k in SignalFields.keys():
-            self._signals[k] = []
+            if SignalFields[k].has_key('I') and SignalFields[k].has_key('Q'):
+                self._signals[k] = []
     def processSignalSet(self):
         for k in SignalFields.keys():
             if SignalFields[k].has_key('I') and SignalFields[k].has_key('Q'):

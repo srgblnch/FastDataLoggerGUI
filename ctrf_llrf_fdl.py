@@ -25,6 +25,7 @@
 
 import os,sys
 import numpy as np
+from copy import copy
 
 #The widgets are stored in a subdirectory and 
 #needs to be added to the pythonpath
@@ -62,6 +63,7 @@ class MainWindow(TaurusMainWindow):
         self._activeParser = None
         self._facadaAdjustments = None
         self._facade = None
+        self._postProcessor = None
         self.splashScreen().finish(self)
     def initComponents(self):
         self.setWindowTitle("RF DLLRF FDL Taurus User Interface")
@@ -170,6 +172,7 @@ class MainWindow(TaurusMainWindow):
         self.facadeManagerBuilder(selection['facade'])
         if self._facade.populateFacadeParams():
             self._facade.doFacadeAdjusments()
+        self.signalProcessorBuilder()
         self.plotManagerBuilder()
     def cancell(self):
         if self._loopsParser != None:
@@ -202,7 +205,10 @@ class MainWindow(TaurusMainWindow):
             self._enableWidgets(True)
             self.ui.progressBar.setValue(100)
         #TODO: report the anomalities rate in the statusBar
-        self.ui
+        #...
+        #postprocess
+        self._postProcessor.process()
+        #plotting:
         self._plotter.doPlots()
         #FIXME: the action to plot should be a reaction to a signal emitted 
         #       when both parsing processes finishes
@@ -221,6 +227,21 @@ class MainWindow(TaurusMainWindow):
         self.connect(self.facadeAction, Qt.SIGNAL("triggered()"),
                      self._facade.doFacadeAdjusments)
     #--- done facade information area
+    ####
+    
+    ####
+    #--- 
+    def signalProcessorBuilder(self):
+        if self._loopsParser != None:
+            loopsSignals=self._loopsParser._signals
+        else:
+            loopsSignals=None
+        if self._diagParser != None:
+            diagSignals=self._diagParser._signals
+        else:
+            diagSignals=None
+        self._postProcessor = SignalProcessor(self,loopsSignals,diagSignals)
+    #---
     ####
 
     ####
@@ -451,9 +472,18 @@ class FacadeManager(Logger,Qt.QObject):
         self._facadeInstanceName = facadeInstanceName
         self._facadeAdjustments = facadeAdjustments()
         self._facadeAttrWidgets = \
-            {'CavityVolts':
+            {'CavVolt_kV':
                 {'m':self._facadeAdjustments._ui.cavityVoltsMValue,
-                 'n':self._facadeAdjustments._ui.cavityVoltsNValue}
+                 'n':self._facadeAdjustments._ui.cavityVoltsNValue},
+             'PDisCav_kW':
+                {'c':self._facadeAdjustments._ui.PDIsCavCValue,
+                 'o':self._facadeAdjustments._ui.PDIsCavOValue},
+             'FwCav_kW':
+                {'c':self._facadeAdjustments._ui.FwCavCValue,
+                 'o':self._facadeAdjustments._ui.FwCavOValue},
+             'RvCav_kW':
+                {'c':self._facadeAdjustments._ui.RvCavCValue,
+                 'o':self._facadeAdjustments._ui.RvCavOValue}
             }
         try:
             dServerName = str('dserver/'+\
@@ -478,15 +508,21 @@ class FacadeManager(Logger,Qt.QObject):
         self._fromFacade = {}
         for field in SignalFields.keys():
             self._fromFacade[field] = {}
+            #FIXME: these ifs needs a refactoring
             if SignalFields[field].has_key('m') and \
                SignalFields[field].has_key('n'):
                 self._fromFacade[field]['m'] = 1
                 self._fromFacade[field]['n'] = 0
+            elif SignalFields[field].has_key('c') and \
+                 SignalFields[field].has_key('o'):
+                self._fromFacade[field]['c'] = 1
+                self._fromFacade[field]['o'] = 0
             #TODO: quadratics
 
     def populateFacadeParams(self):
         requiresFacadeAdjustments = False
         for field in SignalFields.keys():
+            #FIXME: these ifs needs a refactoring
             if SignalFields[field].has_key('m') and \
                SignalFields[field].has_key('n'):
                 mAttr = SignalFields[field]['m']
@@ -497,6 +533,18 @@ class FacadeManager(Logger,Qt.QObject):
                     self.info("For signal %s: m = %g, n = %g"%(field,m,n))
                     self._fromFacade[field]['m'] = m
                     self._fromFacade[field]['n'] = n
+                else:
+                    requiresFacadeAdjustments = True
+            elif SignalFields[field].has_key('c') and \
+                 SignalFields[field].has_key('o'):
+                cAttr = SignalFields[field]['c']
+                oAttr = SignalFields[field]['o']
+                c = self.readAttr(cAttr)
+                o = self.readAttr(oAttr)
+                if c != None and o != None:
+                    self.info("For signal %s: c = %g, o = %g"%(field,c,o))
+                    self._fromFacade[field]['c'] = c
+                    self._fromFacade[field]['o'] = o
                 else:
                     requiresFacadeAdjustments = True
         return requiresFacadeAdjustments
@@ -525,12 +573,25 @@ class FacadeManager(Logger,Qt.QObject):
                            Qt.SIGNAL('clicked(bool)'),self.cancelFacade)
         #TODO: use _fromFacade to populate widgets
         for field in self._fromFacade.keys():
-            m = self._fromFacade[field]['m']
-            n = self._fromFacade[field]['n']
-            self.debug("Information to the user, signal %s: m = %g, n = %g"
-                       %(field,m,n))
-            self._facadeAttrWidgets[field]['m'].setValue(m)
-            self._facadeAttrWidgets[field]['n'].setValue(n)
+            #FIXME: these ifs needs a refactoring
+            if self._fromFacade[field].has_key('m') and \
+               self._fromFacade[field].has_key('n'):
+                m = self._fromFacade[field]['m']
+                n = self._fromFacade[field]['n']
+                self.debug("Information to the user, signal %s: m = %g, n = %g"
+                           %(field,m,n))
+                if self._facadeAttrWidgets.has_key(field):
+                    self._facadeAttrWidgets[field]['m'].setValue(m)
+                    self._facadeAttrWidgets[field]['n'].setValue(n)
+            if self._fromFacade[field].has_key('c') and \
+               self._fromFacade[field].has_key('o'):
+                c = self._fromFacade[field]['c']
+                o = self._fromFacade[field]['o']
+                self.debug("Information to the user, signal %s: c = %g, o = %g"
+                           %(field,c,o))
+                if self._facadeAttrWidgets.has_key(field):
+                    self._facadeAttrWidgets[field]['c'].setValue(c)
+                    self._facadeAttrWidgets[field]['o'].setValue(o)
         self._facadeAdjustments.show()
     
     def getOkButton(self):
@@ -539,12 +600,23 @@ class FacadeManager(Logger,Qt.QObject):
     def okFacade(self):
         self.info("New parameters adjusted by hand by the user!")
         for field in self._fromFacade.keys():
-            m = float(self._facadeAttrWidgets[field]['m'].value())
-            n = float(self._facadeAttrWidgets[field]['n'].value())
-            self.info("Changes from the user, signal %s: m = %g, n = %g"
-                      %(field,m,n))
-            self._fromFacade[field]['m'] = m
-            self._fromFacade[field]['n'] = n
+            #FIXME: these ifs needs a refactoring
+            if self._fromFacade[field].has_key('m') and \
+               self._fromFacade[field].has_key('n'):
+                m = float(self._facadeAttrWidgets[field]['m'].value())
+                n = float(self._facadeAttrWidgets[field]['n'].value())
+                self.info("Changes from the user, signal %s: m = %g, n = %g"
+                          %(field,m,n))
+                self._fromFacade[field]['m'] = m
+                self._fromFacade[field]['n'] = n
+            elif self._fromFacade[field].has_key('c') and \
+                 self._fromFacade[field].has_key('o'):
+                c = float(self._facadeAttrWidgets[field]['c'].value())
+                o = float(self._facadeAttrWidgets[field]['o'].value())
+                self.info("Changes from the user, signal %s: c = %g, o = %g"
+                          %(field,c,o))
+                self._fromFacade[field]['c'] = c
+                self._fromFacade[field]['o'] = o
         self.change.emit()
         self._facadeAdjustments.hide()
     def getCancelButton(self):
@@ -557,13 +629,118 @@ class FacadeManager(Logger,Qt.QObject):
 
     def getMandNs(self,signalName):
         if signalName in self._fromFacade.keys():
+            #FIXME: these ifs needs a refactoring
             if self._fromFacade[signalName].has_key('m') and \
                self._fromFacade[signalName].has_key('n'):
                 return (self._fromFacade[signalName]['m'],
                         self._fromFacade[signalName]['n'])
         else:
             return (None,None)#FIXME
-    #TODO: couple and offset for quadratic fits
+        
+    def getCandOs(self,signalName):
+        if signalName in self._fromFacade.keys():
+            #FIXME: these ifs needs a refactoring
+            if self._fromFacade[signalName].has_key('c') and \
+               self._fromFacade[signalName].has_key('o'):
+                return (self._fromFacade[signalName]['c'],
+                        self._fromFacade[signalName]['o'])
+        else:
+            return (None,None)#FIXME
+
+class SignalProcessor(Logger):
+    def __init__(self,parent,loopsSignals=None,diagSignals=None):
+        Logger.__init__(self)
+        self._parent = parent
+        self._facade = parent._facade
+        self._loops = loopsSignals
+        self._diag = diagSignals
+    def process(self):
+        #FIXME: this retry was is a complete hackish! That must be clean asap
+        retry = []
+        for signal in SignalFields.keys():
+            try:
+                self.calculate(signal)
+            except Exception,e:
+                self.warning("Calculation for %s signal has failed: %s"
+                             %(signal,e))
+                retry.append(signal)
+        #Some uses as input, processed signals that would be not yet ready on 
+        #a first pass
+        secondRetry = []
+        for signal in retry:
+            try:
+                self.calculate(signal)
+            except Exception,e:
+                self.warning("Retry for %s signal has failed: %s"%(signal,e))
+                secondRetry.append(signal)
+        thirdRetry = []
+        for signal in secondRetry:
+            try:
+                self.calculate(signal)
+            except Exception,e:
+                self.warning("Third retry for %s signal has failed: %s"
+                             %(signal,e))
+                thirdRetry.append(signal)
+    def calculate(self,signal):
+        if self.isLinear(signal):
+            self.info("Calculating linear fit on %s signal"%(signal))
+            m,n = self._facade.getMandNs(signal)
+            handler = self.getSignalHandler(signal)
+            handler[signal] = (handler[SignalFields[signal]['x']]- n)/m
+        elif self.isQuadratic(signal):
+            self.info("Calculating quadratic fit on %s signal"%(signal))
+            c,o = self._facade.getCandOs(signal)
+            handler = self.getSignalHandler(signal)
+            handler[signal] = \
+                       (handler[SignalFields[signal]['x']]**2/10e8/10**c-o)
+        elif self.isFormula(signal):
+            self.info("Calculating %s using formula %s"
+                      %(signal,SignalFields[signal]['f']))
+            sources = self.mergeHandlers()
+            self.debug("Data sources: %s"%(sources.keys()))
+            handler = self.getSignalHandler(signal)
+            handler[signal] = eval(SignalFields[signal]['f'],
+                                   {'arcsin':np.arcsin,'pi':np.pi,
+                                    'BeamCurrent':80},
+                                   sources)
+            #FIXME: the beam current should be user selected
+        else:
+            self.info("nothing to do with %s signal"%(signal))
+    
+    def getSignalHandler(self,signal):
+        #FIXME: these ifs needs a refactoring
+        if self.isLinear(signal) or self.isQuadratic(signal):
+            if self._loops.has_key(SignalFields[signal]['x']) :
+                return self._loops
+            elif self._diag.has_key(SignalFields[signal]['x']):
+                return self._diag
+        elif self.isFormula(signal):
+            if SignalFields[signal]['h'] == 'loops':
+                return self._loops
+            elif SignalFields[signal]['h'] == 'diag':
+                return self._diag
+        else:
+            return None#FIXME
+    def mergeHandlers(self):
+        if self._loops != None:
+            merged = copy(self._loops)
+        else:
+            merged = {}
+        if self._diag != None:
+            merged.update(self._diag)
+        self.debug("Merged handles keys: %s"%(merged.keys()))
+        return merged
+    def isLinear(self,signal):
+        return SignalFields[signal].has_key('x') and \
+               SignalFields[signal].has_key('m') and \
+               SignalFields[signal].has_key('n')
+    def isQuadratic(self,signal):
+        return SignalFields[signal].has_key('x') and \
+               SignalFields[signal].has_key('c') and \
+               SignalFields[signal].has_key('o')
+    def isFormula(self,signal):
+        return SignalFields[signal].has_key('f') and \
+               SignalFields[signal].has_key('h')
 
 TOTAL_TIME = 411.00#ms
 
@@ -651,31 +828,41 @@ class Plotter(Logger):
         for signalName in self._loops.keys():
             if type(self._loops[signalName]) == list:
                 self.warning("Signal %s not ready to be plotted"%(signalName))
+            elif not SignalFields[signalName].has_key('gui'):
+                self.debug("Signal %s is not configured to be plotted."
+                           %(signalName))
             else:
-                #cut the incomming signal by the [start:end] delimiters
-                pointTime = TOTAL_TIME/self._loops[signalName].size
-                self.debug("Each sample point means %g ms (%d points)"
-                          %(pointTime,self._loops[signalName].size))
-                startPoint = int(self._startDisplay/pointTime)
-                self.debug("With a start display at %g ms, "\
-                          "point %d the first displayed"
-                          %(self._startDisplay,startPoint))
-                endPoint = int(self._endDisplay/pointTime)
-                self.debug("With a end display at %g ms, "\
-                          "point %d the last displayed"
-                          %(self._endDisplay,endPoint))
-                y = self._loops[signalName][startPoint:endPoint:self._decimation]
-                x = np.linspace(self._startDisplay,self._endDisplay,y.size)
-                signal = {'title':signalName,'x':x,'y':y}
-                m,n = self._facade.getMandNs(signalName)
-                if m != None and n != None:
-                    y = (y-n)/m
+                try:
+                    #cut the incomming signal by the [start:end] delimiters
+                    pointTime = TOTAL_TIME/self._loops[signalName].size
+                    self.debug("Each sample point means %g ms (%d points)"
+                              %(pointTime,self._loops[signalName].size))
+                    startPoint = int(self._startDisplay/pointTime)
+                    self.debug("With a start display at %g ms, "\
+                              "point %d the first displayed"
+                              %(self._startDisplay,startPoint))
+                    endPoint = int(self._endDisplay/pointTime)
+                    self.debug("With a end display at %g ms, "\
+                              "point %d the last displayed"
+                              %(self._endDisplay,endPoint))
+                    y = self._loops[signalName]\
+                                         [startPoint:endPoint:self._decimation]
+                    x = np.linspace(self._startDisplay,self._endDisplay,y.size)
                     signal = {'title':signalName,'x':x,'y':y}
-                tab = SignalFields[signalName]['gui']['tab']
-                plot = SignalFields[signalName]['gui']['plot']
-                color = SignalFields[signalName]['gui']['color']
-                curveProp = CurveAppearanceProperties(lColor=Qt.QColor(color))
-                self._widgetsMap[tab][plot].attachRawData(signal,curveProp)
+    #                m,n = self._facade.getMandNs(signalName)
+    #                if m != None and n != None:
+    #                    y = (y-n)/m
+    #                    signal = {'title':signalName,'x':x,'y':y}
+                    tab = SignalFields[signalName]['gui']['tab']
+                    plot = SignalFields[signalName]['gui']['plot']
+                    color = SignalFields[signalName]['gui']['color']
+                    axis =  SignalFields[signalName]['gui']['axis']
+                    curveProp = CurveAppearanceProperties(\
+                                                       lColor=Qt.QColor(color),
+                                                                    yAxis=axis)
+                    self._widgetsMap[tab][plot].attachRawData(signal,curveProp)
+                except Exception,e:
+                    self.error("Exception plotting %s: %s"%(signalName,e))
     def plotDiag(self):
         pass
 
