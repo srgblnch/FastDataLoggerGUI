@@ -208,8 +208,9 @@ class MainWindow(TaurusMainWindow):
         #...
         #postprocess
         self._postProcessor.process()
+        #FIXME: report the user if something wasn't possible to be calculated
         #plotting:
-        self._plotter.doPlots()
+        self._plotter.doPlots(force=True)
         #FIXME: the action to plot should be a reaction to a signal emitted 
         #       when both parsing processes finishes
     #--- done progress bar tools
@@ -655,32 +656,83 @@ class SignalProcessor(Logger):
         self._loops = loopsSignals
         self._diag = diagSignals
     def process(self):
-        #FIXME: this retry was is a complete hackish! That must be clean asap
-        retry = []
+        '''collect all signal keys splitting in 3 categories
+           1.- pure file signals
+           2.- facade fits
+           3.- formulas
+               3.1.- sort by dependencies
+           do the calculation for the facade fit signals
+           do the calculation of the formulas
+        '''
+        #TODO: perhaps the progress bar can be be also used.
+        doneSignals = []
+        facadeSignals = []
+        formulaSignals = []
+        orphaneSignals = []
         for signal in SignalFields.keys():
+            if self.isFileSignal(signal):
+                doneSignals.append(signal)
+            elif self.isLinear(signal) or self.isQuadratic(signal):
+                facadeSignals.append(signal)
+            elif self.isFormula(signal):
+                formulaSignals.append(signal)
+            else:
+                orphaneSignals.append(signal)
+        self.debug("nothing to do with the %d pure file signals: %s"
+                   %(len(doneSignals),doneSignals))
+        self.debug("%d signals to be calculated using facade parameters: %s"
+                   %(len(facadeSignals),facadeSignals))
+        self.debug("%d signals to be calculated using a formula: %s"
+                   %(len(formulaSignals),formulaSignals))
+        self.warning("%d orphane signals: %s"
+                     %(len(orphaneSignals),orphaneSignals))
+        for signal in facadeSignals:
             try:
                 self.calculate(signal)
+                doneSignals.append(signal)
+                self.debug("made the calculation for facade signal %s"
+                           %(signal))
             except Exception,e:
-                self.warning("Calculation for %s signal has failed: %s"
-                             %(signal,e))
-                retry.append(signal)
-        #Some uses as input, processed signals that would be not yet ready on 
-        #a first pass
-        secondRetry = []
-        for signal in retry:
+                self.error("Exception calculating %s: %s"%(signal,e))
+            else:
+                self.debug("%d signals calculated: %s"
+                           %(len(doneSignals),doneSignals))
+        lastPendingFormulaSignals = [0,0,len(formulaSignals)]
+        while formulaSignals != [] and \
+            len(set(lastPendingFormulaSignals)) != 1:
+            #while there are pending elements or 
+            #last 3 loops didn't reduce the list
+            signal = formulaSignals[0]
             try:
-                self.calculate(signal)
+                dependencies = SignalFields[signal]['d']
+                unsatisfied = list(set(dependencies).difference(doneSignals))
+                if len(unsatisfied) == 0:
+                    try:
+                        self.calculate(signal)
+                        formulaSignals.pop(formulaSignals.index(signal))
+                        doneSignals.append(signal)
+                        self.debug("made the calculation for formula signal %s"
+                                   %(signal))
+                    except:
+                        self.error("Exception calculating %s: %s"%(signal,e))
+                else:
+                    #move to the last to retry
+                    formulaSignals.append(formulaSignals.pop(0))
+                    self.warning("formula signal %s cannot be yet calculated "\
+                                 "due to unsatisfied %s"%(signal,unsatisfied))
             except Exception,e:
-                self.warning("Retry for %s signal has failed: %s"%(signal,e))
-                secondRetry.append(signal)
-        thirdRetry = []
-        for signal in secondRetry:
-            try:
-                self.calculate(signal)
-            except Exception,e:
-                self.warning("Third retry for %s signal has failed: %s"
-                             %(signal,e))
-                thirdRetry.append(signal)
+                self.error("Exception with %s dependencies: %s"%(signal,e))
+                break
+            else:
+                lastPendingFormulaSignals.pop(0)
+                lastPendingFormulaSignals.append(len(formulaSignals))
+                self.debug("Three last loops formula pernding signals: %s"
+                           %(lastPendingFormulaSignals))
+        if len(set(lastPendingFormulaSignals)) == 1:
+            self.error("process has not finished well. There are pending "\
+                       "calculations: %s"%(formulaSignals))
+            return False
+        return True
     def calculate(self,signal):
         if self.isLinear(signal):
             self.info("Calculating linear fit on %s signal"%(signal))
@@ -728,8 +780,10 @@ class SignalProcessor(Logger):
             merged = {}
         if self._diag != None:
             merged.update(self._diag)
-        self.debug("Merged handles keys: %s"%(merged.keys()))
         return merged
+    def isFileSignal(self,signal):
+        return SignalFields[signal].has_key('I') and \
+               SignalFields[signal].has_key('Q')
     def isLinear(self,signal):
         return SignalFields[signal].has_key('x') and \
                SignalFields[signal].has_key('m') and \
@@ -809,22 +863,43 @@ class Plotter(Logger):
     def startDisplay(self):
         return self._parent.ui.timeAndDecimation._ui.startValue.value()
     @property
+    def startDisplayChange(self):
+        '''Compare in-class stored value and widget value
+        '''
+        return self._startDisplay == self.startDisplay
+    @property
     def endDisplay(self):
         return self._parent.ui.timeAndDecimation._ui.endValue.value()
     @property
+    def endDisplayChange(self):
+        '''Compare in-class stored value and widget value
+        '''
+        return self._endDisplay == self.endDisplay
+    @property
     def decimation(self):
         return self._parent.ui.timeAndDecimation._ui.decimationValue.value()
-    def doPlots(self):
-        self.info("starting plotting procedure")
-        self._startDisplay = self.startDisplay
-        self._endDisplay = self.endDisplay
-        self._decimation = self.decimation
-        if self._loops != None:
-            self.plotLoops()
-        if self._diag != None:
-            self.plotDiag()
+    @property
+    def decimationChange(self):
+        '''Compare in-class stored value and widget value
+        '''
+        return self._decimation == self.decimation
+    def doPlots(self,force=False):
+        self.debug("starting plotting procedure")
+        if force or self.startDisplayChange or \
+                    self.endDisplayChange or \
+                    self.decimation:
+            self._startDisplay = self.startDisplay
+            self._endDisplay = self.endDisplay
+            self._decimation = self.decimation
+            if self._loops != None:
+                self.plotLoops()
+            if self._diag != None:
+                self.plotDiag()
+        else:
+            self.debug("ignore plotting because it hasn't change")
     
     def plotLoops(self):
+        self.debug("preparing to plot 'Loops': %s"%(self._loops.keys()))
         for signalName in self._loops.keys():
             if type(self._loops[signalName]) == list:
                 self.warning("Signal %s not ready to be plotted"%(signalName))
@@ -832,6 +907,7 @@ class Plotter(Logger):
                 self.debug("Signal %s is not configured to be plotted."
                            %(signalName))
             else:
+                self.debug("Signal %s will be plotted"%(signalName))
                 try:
                     #cut the incomming signal by the [start:end] delimiters
                     pointTime = TOTAL_TIME/self._loops[signalName].size
