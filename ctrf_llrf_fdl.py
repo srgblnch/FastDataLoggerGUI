@@ -925,10 +925,6 @@ class Plotter(Logger):
                                          [startPoint:endPoint:self._decimation]
                     x = np.linspace(self._startDisplay,self._endDisplay,y.size)
                     signal = {'title':signalName,'x':x,'y':y}
-    #                m,n = self._facade.getMandNs(signalName)
-    #                if m != None and n != None:
-    #                    y = (y-n)/m
-    #                    signal = {'title':signalName,'x':x,'y':y}
                     tab = SignalFields[signalName]['gui']['tab']
                     plot = SignalFields[signalName]['gui']['plot']
                     color = SignalFields[signalName]['gui']['color']
