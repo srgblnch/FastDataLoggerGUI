@@ -627,27 +627,35 @@ class FacadeManager(Logger,Qt.QObject):
         return self._facadeAdjustments._ui.buttonBox.\
                                               button(QtGui.QDialogButtonBox.Ok)
     def okFacade(self):
-        self.info("New parameters adjusted by hand by the user!")
+        #self.info("New parameters adjusted by hand by the user!")
 #        self.getBeamCurrent()
+        hasAnyoneChanged = False
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
             if self._fromFacade[field].has_key('m') and \
                self._fromFacade[field].has_key('n'):
                 m = float(self._facadeAttrWidgets[field]['m'].value())
                 n = float(self._facadeAttrWidgets[field]['n'].value())
-                self.info("Changes from the user, signal %s: m = %g, n = %g"
-                          %(field,m,n))
-                self._fromFacade[field]['m'] = m
-                self._fromFacade[field]['n'] = n
+                if self._fromFacade[field]['m'] != m or \
+                   self._fromFacade[field]['n'] != n:
+                    self.info("Changes from the user, signal %s: m = %g, n = %g"
+                              %(field,m,n))
+                    self._fromFacade[field]['m'] = m
+                    self._fromFacade[field]['n'] = n
+                    hasAnyoneChanged = True
             elif self._fromFacade[field].has_key('c') and \
                  self._fromFacade[field].has_key('o'):
                 c = float(self._facadeAttrWidgets[field]['c'].value())
                 o = float(self._facadeAttrWidgets[field]['o'].value())
-                self.info("Changes from the user, signal %s: c = %g, o = %g"
-                          %(field,c,o))
-                self._fromFacade[field]['c'] = c
-                self._fromFacade[field]['o'] = o
-        self.change.emit()
+                if self._fromFacade[field]['c'] != c or \
+                   self._fromFacade[field]['o'] != o:
+                    self.info("Changes from the user, signal %s: c = %g, o = %g"
+                              %(field,c,o))
+                    self._fromFacade[field]['c'] = c
+                    self._fromFacade[field]['o'] = o
+                    hasAnyoneChanged = True
+        if hasAnyoneChanged:
+            self.change.emit()
         self._facadeAdjustments.hide()
     def getCancelButton(self):
         return self._facadeAdjustments._ui.buttonBox.\
@@ -655,7 +663,6 @@ class FacadeManager(Logger,Qt.QObject):
     def cancelFacade(self):
         self.info("Canceled parameter adjusted by hand by the user!")
         self._facadeAdjustments.hide()
-    
 
     def getMandNs(self,signalName):
         if signalName in self._fromFacade.keys():
@@ -665,8 +672,8 @@ class FacadeManager(Logger,Qt.QObject):
                 return (self._fromFacade[signalName]['m'],
                         self._fromFacade[signalName]['n'])
         else:
-            return (None,None)#FIXME
-        
+            raise Exception("signal %s hasn't M&N's"%(signalName))
+
     def getCandOs(self,signalName):
         if signalName in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
