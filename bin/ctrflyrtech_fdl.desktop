@@ -1,0 +1,10 @@
+[Desktop Entry]
+Comment=Opens RF lyrtech's FDL batch processor
+Name=ctrflyrtech_fdl
+GenericName=RF lyrtech's FDL
+Exec=ctrffdl_lyrtech
+Icon=albact-rf
+Terminal=false
+Type=Application
+Categories=X-albact;X-albact;
+StartupNotify=true
