@@ -60,8 +60,8 @@ class MainWindow(TaurusMainWindow):
         self._loader = None
         self._loopsParser = None
         self._diagParser = None
-        self._activeParser = None
-        self._facadaAdjustments = None
+        #self._activeParser = None
+        #self._facadaAdjustments = None
         self._facade = None
         self._postProcessor = None
         self.splashScreen().finish(self)
@@ -805,13 +805,13 @@ class Plotter(Logger):
         self._facade = parent._facade
         self._loops = loopsSignals
         self._diag = diagSignals
-        self._facade.change.connect(self.doPlots)
+        self._facade.change.connect(self.forcePlot)
         self._startDisplay = self.startDisplay
         self._endDisplay = self.endDisplay
         self._decimation = self.decimation
         Qt.QObject.connect(self._parent.ui.replotButton,
                            Qt.SIGNAL('clicked(bool)'),
-                           self.doPlots)
+                           self.forcePlot)
         Qt.QObject.connect(self._parent.ui.timeAndDecimation._ui.startValue,
                            Qt.SIGNAL('editingFinished()'),
                            self.doPlots)
@@ -866,7 +866,13 @@ class Plotter(Logger):
     def startDisplayChange(self):
         '''Compare in-class stored value and widget value
         '''
-        return self._startDisplay == self.startDisplay
+        self.debug("startDisplayChange: %s,%s"
+                   %(self._startDisplay,self.startDisplay))
+        hasChanged = self._startDisplay != self.startDisplay
+        if hasChanged:
+            self.debug("StartDisplay value has changed")
+        self._startDisplay = self.startDisplay
+        return hasChanged
     @property
     def endDisplay(self):
         return self._parent.ui.timeAndDecimation._ui.endValue.value()
@@ -874,7 +880,13 @@ class Plotter(Logger):
     def endDisplayChange(self):
         '''Compare in-class stored value and widget value
         '''
-        return self._endDisplay == self.endDisplay
+        self.debug("endDisplayChange: %s,%s"
+                   %(self._endDisplay,self.endDisplay))
+        hasChanged = self._endDisplay != self.endDisplay
+        if hasChanged:
+            self.debug("EndDisplay value has changed")
+        self._endDisplay = self.endDisplay
+        return hasChanged
     @property
     def decimation(self):
         return self._parent.ui.timeAndDecimation._ui.decimationValue.value()
@@ -882,21 +894,28 @@ class Plotter(Logger):
     def decimationChange(self):
         '''Compare in-class stored value and widget value
         '''
-        return self._decimation == self.decimation
+        self.debug("decimationChange: %s,%s"
+                   %(self._decimation,self.decimation))
+        hasChanged = self._decimation != self.decimation
+        if hasChanged:
+            self.debug("Decimation value has changed")
+        self._decimation = self.decimation
+        return hasChanged
     def doPlots(self,force=False):
-        self.debug("starting plotting procedure")
-        if force or self.startDisplayChange or \
-                    self.endDisplayChange or \
-                    self.decimation:
-            self._startDisplay = self.startDisplay
-            self._endDisplay = self.endDisplay
-            self._decimation = self.decimation
-            if self._loops != None:
-                self.plotLoops()
-            if self._diag != None:
-                self.plotDiag()
+        isNeeded = force or self.startDisplayChange or \
+                            self.endDisplayChange   or \
+                            self.decimationChange
+        if isNeeded:
+            self.forcePlot()
         else:
             self.debug("ignore plotting because it hasn't change")
+    
+    def forcePlot(self):
+        self.debug("starting plotting procedure")
+        if self._loops != None:
+            self.plotLoops()
+        if self._diag != None:
+            self.plotDiag()
     
     def plotLoops(self):
         self.debug("preparing to plot 'Loops': %s"%(self._loops.keys()))
