@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/FacadeAdjustments.ui'
 #
-# Created: Mon Jul 28 15:01:17 2014
+# Created: Mon Jul 28 15:48:36 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
