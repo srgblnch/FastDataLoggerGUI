@@ -472,6 +472,7 @@ class FacadeManager(Logger,Qt.QObject):
         Qt.QObject.__init__(self, parent=None)
         self._facadeInstanceName = facadeInstanceName
         self._facadeAdjustments = facadeAdjustments()
+        self._beamCurrent = 100#mA
         self._facadeAttrWidgets = \
             {'CavVolt_kV':
                 {'m':self._facadeAdjustments._ui.cavityVoltsMValue,
@@ -572,7 +573,8 @@ class FacadeManager(Logger,Qt.QObject):
                            Qt.SIGNAL('clicked(bool)'),self.okFacade)
         Qt.QObject.connect(self.getCancelButton(),
                            Qt.SIGNAL('clicked(bool)'),self.cancelFacade)
-        #TODO: use _fromFacade to populate widgets
+        self.prepareBeamCurrent()
+        #use _fromFacade to populate widgets
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
             if self._fromFacade[field].has_key('m') and \
@@ -595,11 +597,24 @@ class FacadeManager(Logger,Qt.QObject):
                     self._facadeAttrWidgets[field]['o'].setValue(o)
         self._facadeAdjustments.show()
     
+    def prepareBeamCurrent(self):
+        self._facadeAdjustments._ui.beamCurrentValue.setValue(self._beamCurrent)
+    def getBeamCurrent(self):
+        try:
+            if self._beamCurrent != self._facadeAdjustments._ui.\
+                                                      beamCurrentValue.value():
+                self._beamCurrent = self._facadeAdjustments._ui.\
+                                                       beamCurrentValue.value()
+        except Exception,e:
+            self.warning("Error getting the beam current: %s"%(e))
+        return self._beamCurrent
+    
     def getOkButton(self):
         return self._facadeAdjustments._ui.buttonBox.\
                                               button(QtGui.QDialogButtonBox.Ok)
     def okFacade(self):
         self.info("New parameters adjusted by hand by the user!")
+        self.getBeamCurrent()
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
             if self._fromFacade[field].has_key('m') and \
@@ -753,7 +768,8 @@ class SignalProcessor(Logger):
             handler = self.getSignalHandler(signal)
             handler[signal] = eval(SignalFields[signal]['f'],
                                    {'arcsin':np.arcsin,'pi':np.pi,
-                                    'BeamCurrent':80},
+                                    'BeamCurrent':self._facade.getBeamCurrent()
+                                   },
                                    sources)
             #FIXME: the beam current should be user selected
         else:
