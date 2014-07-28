@@ -169,7 +169,7 @@ class MainWindow(TaurusMainWindow):
             self._diagParser.done.connect(self.endProgressBar)
             self._diagParser.process()
         #facade and plotting:
-        self.facadeManagerBuilder(selection['facade'])
+        self.facadeManagerBuilder(selection['facade'],selection['beamCurrent'])
         if self._facade.populateFacadeParams():
             self._facade.doFacadeAdjusments()
         self.signalProcessorBuilder()
@@ -218,12 +218,12 @@ class MainWindow(TaurusMainWindow):
     
     ####
     #--- facade information area
-    def facadeManagerBuilder(self,instanceName):
+    def facadeManagerBuilder(self,instanceName,beamCurrent):
         if self._facade != None and self._facade.instanceName != instanceName:
             del self._facade
             self._facade = None
         if self._facade == None:
-            self._facade = FacadeManager(instanceName)
+            self._facade = FacadeManager(instanceName,beamCurrent)
         self.facadeAction.setEnabled(True)
         self.connect(self.facadeAction, Qt.SIGNAL("triggered()"),
                      self._facade.doFacadeAdjusments)
@@ -321,6 +321,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         #self.ui = Ui_fileLoader()
         #self.ui.setupUi(self)
         self._plant = None
+        self._beamCurrent = 100#mA
         self.initComponents()
 
     def initComponents(self):
@@ -351,6 +352,8 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         self.panel().facadeCombo.addItems(['']+self._facadesFound)
         self.info("Found %d facades: %s"
                   %(len(self._facadesFound),self._facadesFound))
+        #segment for the beam current
+        self.setBeamCurrent(self._beamCurrent)
         #signals for the action buttons
         okButton = self.panel().buttonBox.button(QtGui.QDialogButtonBox.Ok)
         okButton.setEnabled(False)
@@ -444,7 +447,8 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         selection = {'Loops':self._loopsFile,
                      'Diag':self._diagFile,
                      'plant':self._plant.completeName,
-                     'facade':self._plant.facadeInstanceName}
+                     'facade':self._plant.facadeInstanceName,
+                     'beamCurrent':self.getBeamCurrent()}
         self.debug("selection: %s"%(selection))
         return selection
 
@@ -465,14 +469,24 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
     def warningMsg(self,title,msg):
         QtGui.QMessageBox.warning(self,title,msg)
 
+    def setBeamCurrent(self,value):
+        self.panel().beamCurrentValue.setValue(value)
+    def getBeamCurrent(self):
+        try:
+            self._beamCurrent = self.panel().beamCurrentValue.value()
+        except:
+            self.warning("The beam current cannot be readed from the widget: "\
+                         "%s"%(e))
+        return self._beamCurrent
+
 class FacadeManager(Logger,Qt.QObject):
     change = QtCore.pyqtSignal()
-    def __init__(self,facadeInstanceName):
+    def __init__(self,facadeInstanceName,beamCurrent=100):
         Logger.__init__(self)
         Qt.QObject.__init__(self, parent=None)
         self._facadeInstanceName = facadeInstanceName
         self._facadeAdjustments = facadeAdjustments()
-        self._beamCurrent = 100#mA
+        self._beamCurrent = beamCurrent#mA
         self._facadeAttrWidgets = \
             {'CavVolt_kV':
                 {'m':self._facadeAdjustments._ui.cavityVoltsMValue,
@@ -573,7 +587,7 @@ class FacadeManager(Logger,Qt.QObject):
                            Qt.SIGNAL('clicked(bool)'),self.okFacade)
         Qt.QObject.connect(self.getCancelButton(),
                            Qt.SIGNAL('clicked(bool)'),self.cancelFacade)
-        self.prepareBeamCurrent()
+#        self.prepareBeamCurrent()
         #use _fromFacade to populate widgets
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
@@ -597,16 +611,16 @@ class FacadeManager(Logger,Qt.QObject):
                     self._facadeAttrWidgets[field]['o'].setValue(o)
         self._facadeAdjustments.show()
     
-    def prepareBeamCurrent(self):
-        self._facadeAdjustments._ui.beamCurrentValue.setValue(self._beamCurrent)
+#    def prepareBeamCurrent(self):
+#        self._facadeAdjustments._ui.beamCurrentValue.setValue(self._beamCurrent)
     def getBeamCurrent(self):
-        try:
-            if self._beamCurrent != self._facadeAdjustments._ui.\
-                                                      beamCurrentValue.value():
-                self._beamCurrent = self._facadeAdjustments._ui.\
-                                                       beamCurrentValue.value()
-        except Exception,e:
-            self.warning("Error getting the beam current: %s"%(e))
+#        try:
+#            if self._beamCurrent != self._facadeAdjustments._ui.\
+#                                                      beamCurrentValue.value():
+#                self._beamCurrent = self._facadeAdjustments._ui.\
+#                                                       beamCurrentValue.value()
+#        except Exception,e:
+#            self.warning("Error getting the beam current: %s"%(e))
         return self._beamCurrent
     
     def getOkButton(self):
@@ -614,7 +628,7 @@ class FacadeManager(Logger,Qt.QObject):
                                               button(QtGui.QDialogButtonBox.Ok)
     def okFacade(self):
         self.info("New parameters adjusted by hand by the user!")
-        self.getBeamCurrent()
+#        self.getBeamCurrent()
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
             if self._fromFacade[field].has_key('m') and \
@@ -728,7 +742,7 @@ class SignalProcessor(Logger):
                         doneSignals.append(signal)
                         self.debug("made the calculation for formula signal %s"
                                    %(signal))
-                    except:
+                    except Exception,e:
                         self.error("Exception calculating %s: %s"%(signal,e))
                 else:
                     #move to the last to retry
@@ -813,6 +827,10 @@ class SignalProcessor(Logger):
                SignalFields[signal].has_key('h')
 
 TOTAL_TIME = 411.00#ms
+#TODO: It's assumend that all the files have the same time, when what would 
+# be assumed if that each sample set has a fix size in time.
+#pointTime = 0.000195981#ms 
+#totalTime = pointTime*self._loops[signalName].size
 
 class Plotter(Logger):
     def __init__(self,parent,loopsSignals=None,diagSignals=None):

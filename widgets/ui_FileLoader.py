@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui/FileLoader.ui'
+# Form implementation generated from reading ui file 'widgets/ui/FileLoader.ui'
 #
-# Created: Fri Jul 11 14:54:04 2014
+# Created: Mon Jul 28 15:01:04 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -17,7 +17,7 @@ except AttributeError:
 class Ui_fileLoader(object):
     def setupUi(self, fileLoader):
         fileLoader.setObjectName(_fromUtf8("fileLoader"))
-        fileLoader.resize(500, 222)
+        fileLoader.resize(489, 220)
         self.gridLayout_4 = QtGui.QGridLayout(fileLoader)
         self.gridLayout_4.setObjectName(_fromUtf8("gridLayout_4"))
         self.line = QtGui.QFrame(fileLoader)
@@ -35,22 +35,31 @@ class Ui_fileLoader(object):
         self.gridLayout_4.addWidget(self.fineTuneLabel, 4, 0, 1, 1)
         self.fineTuneLayout = QtGui.QGridLayout()
         self.fineTuneLayout.setObjectName(_fromUtf8("fineTuneLayout"))
-        self.locationCombo = QtGui.QComboBox(fileLoader)
-        self.locationCombo.setEditable(True)
-        self.locationCombo.setObjectName(_fromUtf8("locationCombo"))
-        self.fineTuneLayout.addWidget(self.locationCombo, 0, 2, 1, 1)
-        self.facadeLabel = QtGui.QLabel(fileLoader)
-        self.facadeLabel.setObjectName(_fromUtf8("facadeLabel"))
-        self.fineTuneLayout.addWidget(self.facadeLabel, 1, 1, 1, 1)
+        self.locationLabel = QtGui.QLabel(fileLoader)
+        self.locationLabel.setObjectName(_fromUtf8("locationLabel"))
+        self.fineTuneLayout.addWidget(self.locationLabel, 0, 3, 1, 1)
+        self.beamCurrentLabel = QtGui.QLabel(fileLoader)
+        self.beamCurrentLabel.setObjectName(_fromUtf8("beamCurrentLabel"))
+        self.fineTuneLayout.addWidget(self.beamCurrentLabel, 0, 0, 1, 1)
         self.facadeCombo = QtGui.QComboBox(fileLoader)
         self.facadeCombo.setEditable(True)
         self.facadeCombo.setObjectName(_fromUtf8("facadeCombo"))
-        self.fineTuneLayout.addWidget(self.facadeCombo, 1, 2, 1, 1)
-        self.locationLabel = QtGui.QLabel(fileLoader)
-        self.locationLabel.setObjectName(_fromUtf8("locationLabel"))
-        self.fineTuneLayout.addWidget(self.locationLabel, 0, 1, 1, 1)
+        self.fineTuneLayout.addWidget(self.facadeCombo, 1, 4, 1, 1)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.fineTuneLayout.addItem(spacerItem, 0, 0, 1, 1)
+        self.fineTuneLayout.addItem(spacerItem, 0, 2, 1, 1)
+        self.facadeLabel = QtGui.QLabel(fileLoader)
+        self.facadeLabel.setObjectName(_fromUtf8("facadeLabel"))
+        self.fineTuneLayout.addWidget(self.facadeLabel, 1, 3, 1, 1)
+        self.locationCombo = QtGui.QComboBox(fileLoader)
+        self.locationCombo.setEditable(True)
+        self.locationCombo.setObjectName(_fromUtf8("locationCombo"))
+        self.fineTuneLayout.addWidget(self.locationCombo, 0, 4, 1, 1)
+        self.beamCurrentValue = QtGui.QDoubleSpinBox(fileLoader)
+        self.beamCurrentValue.setMinimum(1.0)
+        self.beamCurrentValue.setMaximum(400.0)
+        self.beamCurrentValue.setProperty("value", 100.0)
+        self.beamCurrentValue.setObjectName(_fromUtf8("beamCurrentValue"))
+        self.fineTuneLayout.addWidget(self.beamCurrentValue, 0, 1, 1, 1)
         self.gridLayout_4.addLayout(self.fineTuneLayout, 3, 0, 1, 2)
         self.diagGroup = QtGui.QGroupBox(fileLoader)
         self.diagGroup.setObjectName(_fromUtf8("diagGroup"))
@@ -82,8 +91,10 @@ class Ui_fileLoader(object):
 
     def retranslateUi(self, fileLoader):
         fileLoader.setWindowTitle(QtGui.QApplication.translate("fileLoader", "Load Files", None, QtGui.QApplication.UnicodeUTF8))
-        self.facadeLabel.setText(QtGui.QApplication.translate("fileLoader", "Facade:", None, QtGui.QApplication.UnicodeUTF8))
         self.locationLabel.setText(QtGui.QApplication.translate("fileLoader", "RF plant:", None, QtGui.QApplication.UnicodeUTF8))
+        self.beamCurrentLabel.setText(QtGui.QApplication.translate("fileLoader", "Beam current", None, QtGui.QApplication.UnicodeUTF8))
+        self.facadeLabel.setText(QtGui.QApplication.translate("fileLoader", "Facade:", None, QtGui.QApplication.UnicodeUTF8))
+        self.beamCurrentValue.setSuffix(QtGui.QApplication.translate("fileLoader", " mA", None, QtGui.QApplication.UnicodeUTF8))
         self.diagGroup.setTitle(QtGui.QApplication.translate("fileLoader", "Diagnostics file name:", None, QtGui.QApplication.UnicodeUTF8))
         self.diagFileDialog.setText(QtGui.QApplication.translate("fileLoader", "...", None, QtGui.QApplication.UnicodeUTF8))
         self.loopsGroup.setTitle(QtGui.QApplication.translate("fileLoader", "Loops file name:", None, QtGui.QApplication.UnicodeUTF8))
