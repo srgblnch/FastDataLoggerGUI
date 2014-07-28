@@ -32,92 +32,16 @@
 from taurus.core.util import Logger
 import numpy as np
 import scipy as sp
-from taurus.external.qt import Qt,QtGui,QtCore,Qwt5
+from taurus.external.qt import Qt,QtGui,QtCore
 from threading import Thread,Event
 from math import sqrt
 from copy import copy
 import traceback
 
+from Signals import *
+
 SEPARATOR = 0x7FFF
 LOAD_ERROR_RATE = 0.01
-
-#General description of the signals. This wants to be a single point 
-#configuration place. This dictionary contains all the output key names, and
-#their item contents are dictionaries also, with:
-# - signals with I&Q keys: calculate sqrt(I^2+Q^2)
-#                    where items in I&Q are file fields (LoopsFiels/DiagFields)
-# - signals with 'x' and m&n keys: 
-#                    - calculate (x-n)/m
-#                      where 'x' is another signal and m&n facades attr names
-#                      this calculation will be made in the gui
-# - signals with 'x' and c&o keys (couple and offset): 
-#                    - calculate x**2/10e8/10**(c)+o
-#                      where 'x' is another signal and c&o facades attr names
-#                      this calculation will be made in the gui
-# - signals with 'f', 'h' and 'd':
-#                    - calculate using a formula with other fields, and left
-#                      the result in 'h'. It also has a dependency list with a 
-#                      list of other keys it need to correctly do its own
-#                      calculation.
-# - signals with 'gui' key: its items describes locations ('tab','plot' and 
-#                      'y' axis) and colour to plot  this signal in the 
-#                      interface.
-# Even this module doesn't know about the gui, this last key has been set up
-# here in order to have a single point key naming to know where to modify if
-# user request any change.
-
-#pure file signal description fields
-I = 'I'
-Q = 'Q'
-#signals with linear of quadratic fits using facade's attrs
-vble = 'x'
-slope = 'm'
-loffset = 'n'
-couple = 'c'
-qoffset = 'o'
-#formula evaluation signals
-formula = 'f'
-handler = 'h'
-depend = 'd'
-#descriptions for the graphical interface
-gui = 'gui'
-tab = 'tab'
-plot = 'plot'
-axis = 'axis'
-color='color'
-
-SignalFields = {'CavVolt_mV':    {I:'Cav_I',  Q:'Cav_Q'  },
-                'FwCav_mV':      {I:'FwCav_I',Q:'FwCav_Q'},
-                'RvCav_mV':      {I:'RvCav_I',Q:'RvCav_Q'},
-                'CavVolt_kV':    {vble:   'CavVolt_mV',
-                                  slope:  'CAV_VOLT_KV_m',
-                                  loffset:'CAV_VOLT_KV_n',
-                                  gui:    {tab:'Loops1',
-                                           plot:'topLeft',
-                                           axis:Qwt5.QwtPlot.Axis(0),
-                                           color:'Blue'}},
-                'PDisCav_kW':    {vble:   'CavVolt_mV',
-                                  couple: 'PDisCav_c',
-                                  qoffset:'PDisCav_o',},
-                'FwCav_kW':      {vble:   'FwCav_mV',
-                                  couple: 'FwCav_kW_c',
-                                  qoffset:'FwCav_kW_o'},
-                'RvCav_kW':      {vble:   'RvCav_mV',
-                                  couple: 'RvCav_kW_c',
-                                  qoffset:'RvCav_kW_o',},
-                'PBeam_kW':      {formula:'FwCav_kW-RvCav_kW-PDisCav_kW',
-                                  handler:'loops',
-                                  depend: ['FwCav_kW','RvCav_kW',
-                                           'PDisCav_kW']},
-                'BeamPhase':     {formula:\
-                     '180-arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV)*180/pi',
-                                  handler:'loops',
-                                  depend: ['PBeam_kW','CavVolt_kV'],
-                                  gui:    {tab:'Loops1',
-                                           plot:'topLeft',
-                                           axis:Qwt5.QwtPlot.Axis(1),
-                                           color:'Red'}}
-               }
 
 class FdlFile(Logger,Qt.QObject):
     step = QtCore.pyqtSignal()
@@ -308,25 +232,6 @@ class FdlFile(Logger,Qt.QObject):
     #--- done internal area
     ####
 
-#Correspondence of signals structure. 
-#Section 6.1 table 5 of the documentation v2 from 20140620
-LoopsFields = {'separator':     0,'FwCavPhase':    1,#0
-               'FwIOT1_I':      2,'FwIOT1_Q':      3,#1
-               'FwIOT2_I':      4,'FwIOT2_Q':      5,#2
-               'RvCircIn_I':    6,'RvCircIn_Q':    7,#3
-               'FwLoad_I':      8,'FwLoad_Q':      9,#4
-               'RvCav_I':      10,'RvCav_Q':      11,#5
-               'MO_I':         12,'MO_Q':         13,#6
-               'CavFiltered_I':14,'CavFiltered_Q':15,#7
-               'AmpCell2':     16,'AmpCell4':     17,#8
-               'Cav_I':        18,'Cav_Q':        19,#9
-               'Control_I':    20,'Control_Q':    21,#10
-               'Error_I':      22,'Error_Q':      23,#11
-               'ErroAccum_I':  24,'ErrorAccum_Q': 25,#12
-               'FwCav_I':      26,'FwCav_Q':      27,#13
-               'TuningDephase':28,'CavityPhase':  29,#14
-               'Reference_I':  30,'Reference_Q':  31}#15
-
 class LoopsFile(FdlFile):
     def __init__(self,filename,loadErrorRate=LOAD_ERROR_RATE):
         self._fields = LoopsFields
@@ -350,20 +255,6 @@ class LoopsFile(FdlFile):
     #--- done preparation area
     ####
 
-#Correspondence of signals structure. 
-#Section 6.1 table 6 of the documentation v2 from 20140620
-#FIXME: what about this position 1!!
-DiagFields = { 0:'separator',   1:'??',         #0  
-               2:'SSA1Input_I', 3:'SSA1Input_Q',#1
-               4:'SSA2Input_I', 5:'SSA2Input_Q',#2
-               6:'FwCircIn_I',  7:'FwCircIn_Q', #3
-               8:'FwCircOut_I', 9:'FwCircOut_Q',#4
-              10:'RvCircOut_I',11:'RvCircOut_Q',#5
-              12:'RvLoad_I',   13:'RvLoad_Q',   #6
-              14:'RvIOT1_I',   15:'RvIOT1_Q',   #7
-              16:'RvIOT2_I',   17:'RvIOT2_Q'    #8
-             }
-
 class DiagnosticsFile(FdlFile):
     def __init__(self,filename,loadErrorRate=LOAD_ERROR_RATE):
         self._fields = DiagFields
@@ -383,6 +274,9 @@ class DiagnosticsFile(FdlFile):
 
 from pylab import *
 def plotter():
+    '''This is NOT a taurus gui plotter, that's for testing purposes to plot
+       using matplotlib.
+    '''
     from matplotlib.pyplot import draw, figure, show
     f1 = figure()
     af1 = f1.add_subplot(111)
