@@ -32,7 +32,7 @@
 from taurus.core.util import Logger
 import numpy as np
 import scipy as sp
-from taurus.external.qt import Qt,QtGui,QtCore
+from taurus.external.qt import Qt,QtGui,QtCore,Qwt5
 from threading import Thread,Event
 from math import sqrt
 from copy import copy
@@ -42,6 +42,7 @@ from Signals import *
 
 SEPARATOR = 0x7FFF
 LOAD_ERROR_RATE = 0.01
+
 
 class FdlFile(Logger,Qt.QObject):
     step = QtCore.pyqtSignal()
