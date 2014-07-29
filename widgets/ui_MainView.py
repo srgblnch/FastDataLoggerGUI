@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/MainView.ui'
 #
-# Created: Thu Jul 24 09:39:44 2014
+# Created: Mon Jul 28 16:50:13 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -103,7 +103,6 @@ class Ui_FastDataLoggerDLLRF(object):
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
         self.progressBar = QtGui.QProgressBar(self.scrollAreaWidgetContents)
         self.progressBar.setEnabled(False)
-        self.progressBar.setProperty("value", 100)
         self.progressBar.setObjectName(_fromUtf8("progressBar"))
         self.horizontalLayout.addWidget(self.progressBar)
         self.cancelButton = QtGui.QPushButton(self.scrollAreaWidgetContents)

@@ -33,7 +33,11 @@ linacWidgetsPath = os.environ['PWD']+'/widgets'
 if not linacWidgetsPath in sys.path:
     sys.path.append(linacWidgetsPath)
 
-from taurus.external.qt import Qt,QtGui,QtCore
+try:#normal way
+    from taurus.external.qt import Qt,QtGui,QtCore
+except:#backward compatibility to pyqt 4.4.3
+    from taurus.qt import Qt,QtGui,QtCore
+    from FdlFileParser import MyQtSignal
 from taurus.core.util import argparse,Logger
 from taurus.qt.qtgui.application import TaurusApplication
 from taurus.qt.qtgui.container import TaurusMainWindow
@@ -71,6 +75,7 @@ class MainWindow(TaurusMainWindow):
         self.setCentralWidget(self.centralwidget)
         #Remove the perspectives bar (meaning less in this gui)
         self.perspectivesToolBar.clear()
+        self.prepareTimeAndDecimation()
         #prepare button reactions
         Qt.QObject.connect(self.ui.loadButton,
                            Qt.SIGNAL('clicked(bool)'),
@@ -81,15 +86,37 @@ class MainWindow(TaurusMainWindow):
         #Like the button add also the loadFile to the menu
         self.loadFileAction = Qt.QAction(getThemeIcon("document-open"),
                                          'Open Files...',self)
-        self.connect(self.loadFileAction, Qt.SIGNAL("triggered()"),
-                     self.loadFile)
+        #try:#normal way
+        #    self.connect(self.loadFileAction, Qt.SIGNAL("triggered()"),
+        #                 self.loadFile)
+        #except:#backward compatibility to pyqt 4.4.3
+        Qt.QObject.connect(self.loadFileAction, Qt.SIGNAL("triggered()"),
+                           self.loadFile)
         self.fileMenu.addAction(self.loadFileAction)#TODO: sort this menu
         self._enableWidgets(True)
         #adjustments on the facade configuration
         self.facadeAction = Qt.QAction('Facade fits',self)
         self.facadeAction.setEnabled(False)
         self.toolsMenu.addAction(self.facadeAction)
-        
+    
+    def prepareTimeAndDecimation(self):
+        #start Value
+        self.ui.timeAndDecimation._ui.startValue.setMinimum(0.0)
+        self.ui.timeAndDecimation._ui.startValue.setMaximum(411.0)
+        self.ui.timeAndDecimation._ui.startValue.setSuffix(' ms')
+        self.ui.timeAndDecimation._ui.startValue.setMinimumWidth(100)
+        #endValue
+        self.ui.timeAndDecimation._ui.endValue.setMinimum(0.0)
+        self.ui.timeAndDecimation._ui.endValue.setMaximum(411.0)
+        self.ui.timeAndDecimation._ui.endValue.setSuffix(' ms')
+        self.ui.timeAndDecimation._ui.endValue.setValue(411.0)
+        #decimation
+        self.ui.timeAndDecimation._ui.decimationValue.setMinimum(1)
+        self.ui.timeAndDecimation._ui.decimationValue.setMaximum(1000)
+        self.ui.timeAndDecimation._ui.decimationValue.setValue(1)
+        #progress bar initial value
+        self.ui.progressBar.setValue(100)
+    
     def _enableWidgets(self,enable):
         #buttons
         self.ui.loadButton.setEnabled(enable)
@@ -125,6 +152,8 @@ class MainWindow(TaurusMainWindow):
                               "cancelling the diagnostics file processing.")
                     self._diagParser.abort()
                 if self._facade != None:
+                    if hasattr(self._facade,"_facadeAdjustments"):
+                        self._facade._facadeAdjustments = None
                     self._facade.cancelFacade()
                 event.accept()
             else:
@@ -139,23 +168,30 @@ class MainWindow(TaurusMainWindow):
     #--- Load file section
     def loadFile(self):
         self.info("Load file clicked")
-        self._loader = LoadFileDialog(self)
-        self._loader.closeApp.connect(self.closeLoaderWidget)
-        #Qt.QObject.connect(self._loader,Qt.SIGNAL("closeApp"),self.cancelled)
-        self._loader.selectionDone.connect(self.prepare)
-        #Qt.QObject.connect(self._loader,Qt.SIGNAL("selectionDone"),
-        #                   self.prepare)
+        if self._loader == None:
+            self._loader = LoadFileDialog(self)
+            try:#normal way
+                self._loader.closeApp.connect(self.closeLoaderWidget)
+            except:#backward compatibility to pyqt 4.4.3
+                self.warning("Connecting closeApp in the old way")
+                Qt.QObject.connect(self._loader,
+                                   Qt.SIGNAL("closeApp"),
+                                   self.closeLoaderWidget)
+            try:#normal way
+                self._loader.selectionDone.connect(self.prepare)
+            except:#backward compatibility to pyqt 4.4.3
+                self.warning("Connecting selectionDone in the old way")
+                Qt.QObject.connect(self._loader,Qt.SIGNAL("selectionDone"),
+                                   self.prepare)
         self._loader.show()
     def closeLoaderWidget(self):
         self.info("closeLoaderWidget()")
         self._loader.hide()
-        self._loader = None
+        #self._loader = None
     def prepare(self):
-        self.info("prepare()")
         selection = self._loader.getSelection()
-        self.info("prepare(): "%(selection))
+        self.info("prepare(): %s"%(str(selection)))
         self._loader.hide()
-        self._loader = None
         #build a FdlFileParser objects
         self.prepareProgressBar()
         if len(selection['Loops']) > 0:
@@ -174,6 +210,7 @@ class MainWindow(TaurusMainWindow):
             self._facade.doFacadeAdjusments()
         self.signalProcessorBuilder()
         self.plotManagerBuilder()
+        self._loader = None
     def cancell(self):
         if self._loopsParser != None:
             self._loopsParser.abort()
@@ -197,7 +234,8 @@ class MainWindow(TaurusMainWindow):
                 value = (value+self._diagParser.percentage)/2
             else:
                 value = self._diagParser.percentage
-        self.ui.progressBar.setValue(value)
+        self.debug("new progress bar value %g"%(value))
+        self.ui.progressBar.setValue(int(value))
     def endProgressBar(self):
         if (self._loopsParser == None or not self._loopsParser.isProcessing())\
            and\
@@ -308,8 +346,12 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
        wrong, a human readable message shall be written in 
        'fineTuneLabel' QLabel widget.
     '''
-    closeApp = QtCore.pyqtSignal()
-    selectionDone = QtCore.pyqtSignal()
+    try:#normal way
+        closeApp = QtCore.pyqtSignal()
+        selectionDone = QtCore.pyqtSignal()
+    except:#backward compatibility to pyqt 4.4.3
+        closeApp = MyQtSignal('closeApp')
+        selectionDone = MyQtSignal('selectionDone')
     
     def __init__(self, parent=None):
         Qt.QDialog.__init__(self, parent)
@@ -353,7 +395,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         self.info("Found %d facades: %s"
                   %(len(self._facadesFound),self._facadesFound))
         #segment for the beam current
-        self.setBeamCurrent(self._beamCurrent)
+        self.setupBeamCurrent()
         #signals for the action buttons
         okButton = self.panel().buttonBox.button(QtGui.QDialogButtonBox.Ok)
         okButton.setEnabled(False)
@@ -366,8 +408,8 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
 
     def selectFile(self,dialogTitle):
         filters = "Binary data files (*.dat);;All files (*)"
-        fileName = QtGui.QFileDialog.getOpenFileName(self,dialogTitle,
-                                                 defaultConfigurations,filters)
+        fileName = str(QtGui.QFileDialog.getOpenFileName(self,dialogTitle,
+                                                defaultConfigurations,filters))
         self.info("Selected: %s"%(fileName))
         shortName = fileName.rsplit('/',1)[1].split('_')[1]
         self._plant = PlantTranslator(shortName)
@@ -444,12 +486,24 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         self.panel().facadeCombo.setCurrentIndex(newIndex)
         
     def getSelection(self):
-        selection = {'Loops':self._loopsFile,
-                     'Diag':self._diagFile,
-                     'plant':self._plant.completeName,
-                     'facade':self._plant.facadeInstanceName,
-                     'beamCurrent':self.getBeamCurrent()}
-        self.debug("selection: %s"%(selection))
+#        selection = {'Loops':self._loopsFile,
+#                     'Diag':self._diagFile,
+#                     'plant':self._plant.completeName,
+#                     'facade':self._plant.facadeInstanceName,
+#                     'beamCurrent':self.getBeamCurrent()}
+        selection = {}
+        self.debug("Selection: Loops = %s"%(self._loopsFile))
+        selection['Loops'] = self._loopsFile
+        self.debug("Selection: Diag = %s"%(self._diagFile))
+        selection['Diag'] = self._diagFile
+        self.debug("Selection: plant = %s"%(self._plant.completeName))
+        selection['plant'] = self._plant.completeName
+        self.debug("Selection: facade = %s"%(self._plant.facadeInstanceName))
+        selection['facade'] = self._plant.facadeInstanceName
+        self.debug("Selection: BeamCurrent = %f"%(self.getBeamCurrent()))
+        selection['beamCurrent'] = self.getBeamCurrent()
+        
+        self.info("selection: %s"%(selection))
         return selection
 
     def panel(self):
@@ -469,6 +523,12 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
     def warningMsg(self,title,msg):
         QtGui.QMessageBox.warning(self,title,msg)
 
+    def setupBeamCurrent(self):
+        self.panel().beamCurrentValue.setMinimum(1.0)
+        self.panel().beamCurrentValue.setMaximum(400.0)
+        self.panel().beamCurrentValue.setValue(100.0)
+        self.panel().beamCurrentValue.setSuffix(' mA')
+        self.setBeamCurrent(self._beamCurrent)
     def setBeamCurrent(self,value):
         self.panel().beamCurrentValue.setValue(value)
     def getBeamCurrent(self):
@@ -480,10 +540,16 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         return self._beamCurrent
 
 class FacadeManager(Logger,Qt.QObject):
-    change = QtCore.pyqtSignal()
+    try:#normal way
+        change = QtCore.pyqtSignal()
+    except:#backward compatibility to pyqt 4.4.3
+        change = MyQtSignal('change')
     def __init__(self,facadeInstanceName,beamCurrent=100):
         Logger.__init__(self)
-        Qt.QObject.__init__(self, parent=None)
+        try:#normal way
+            Qt.QObject.__init__(self, parent=None)
+        except:#backward compatibility to pyqt 4.4.3
+            Qt.QObject.__init__(self)
         self._facadeInstanceName = facadeInstanceName
         self._facadeAdjustments = facadeAdjustments()
         self._beamCurrent = beamCurrent#mA

@@ -87,18 +87,6 @@
      </item>
      <item row="0" column="1">
       <widget class="QDoubleSpinBox" name="beamCurrentValue">
-       <property name="suffix">
-        <string> mA</string>
-       </property>
-       <property name="minimum">
-        <double>1.000000000000000</double>
-       </property>
-       <property name="maximum">
-        <double>400.000000000000000</double>
-       </property>
-       <property name="value">
-        <double>100.000000000000000</double>
-       </property>
       </widget>
      </item>
     </layout>

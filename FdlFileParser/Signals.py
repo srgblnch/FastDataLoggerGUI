@@ -52,7 +52,12 @@
     user request any change.
 '''
 
-from taurus.external.qt import Qwt5
+try:#normal way
+    from taurus.external.qt import Qwt5
+    backward = False
+except:#backward compatibility to pyqt 4.4.3
+    from taurus.qt import Qwt5
+    backward = True
 
 ####
 #--- Dictionary keywords:
@@ -75,6 +80,8 @@ tab = 'tab'
 plot = 'plot'
 axis = 'axis'
 color='color'
+y1 = Qwt5.QwtPlot.Axis(0)
+y2 = Qwt5.QwtPlot.Axis(1)
 #--- done dictionary keywords
 ####
 
@@ -86,8 +93,8 @@ SignalFields = {'CavVolt_mV':    {I:'Cav_I',  Q:'Cav_Q'  },
                                   loffset:'CAV_VOLT_KV_n',
                                   gui:    {tab:'Loops1',
                                            plot:'topLeft',
-                                           axis:Qwt5.QwtPlot.Axis(0),
-                                           color:'Blue'}},
+                                           axis:y1,
+                                           color:'Red'}},
                 'PDisCav_kW':    {vble:   'CavVolt_mV',
                                   couple: 'PDisCav_c',
                                   qoffset:'PDisCav_o',},
@@ -107,8 +114,8 @@ SignalFields = {'CavVolt_mV':    {I:'Cav_I',  Q:'Cav_Q'  },
                                   depend: ['PBeam_kW','CavVolt_kV'],
                                   gui:    {tab:'Loops1',
                                            plot:'topLeft',
-                                           axis:Qwt5.QwtPlot.Axis(1),
-                                           color:'Red'}}
+                                           axis:y2,
+                                           color:'Cyan'}}
                }
 
 #Correspondence of signals structure. 

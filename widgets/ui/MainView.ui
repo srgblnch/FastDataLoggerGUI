@@ -164,9 +164,6 @@
            <property name="enabled">
             <bool>false</bool>
            </property>
-           <property name="value">
-            <number>100</number>
-           </property>
           </widget>
          </item>
          <item>
