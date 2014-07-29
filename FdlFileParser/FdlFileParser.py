@@ -52,24 +52,25 @@ LOAD_ERROR_RATE = 0.01
 class MyQtSignal(Logger):
     '''This class is made to emulate the pyqtSignals for too old pyqt versions.
     '''
-    def __init__(self,name):
-        Logger.__init__(self)
+    def __init__(self,name,parent=None):
+        Logger.__init__(self,parent)
+        self._parent = parent
         self._name = name
         self._cb = []
     def emit(self):
         self.info("Signal %s emit (%s)"%(self._name,self._cb))
-        for i,cb in enumerate(self._cb):
-            try:
-                cb()
-            except Exception,e:
-                self.error("Cannot do the %dth callback for %s: %s"
-                           %(i,self._name,e))
-                traceback.print_exc()
-        Qt.SIGNAL(self._name)
+#        for i,cb in enumerate(self._cb):
+#            try:
+#                cb()
+#            except Exception,e:
+#                self.error("Cannot do the %dth callback for %s: %s"
+#                           %(i,self._name,e))
+#                traceback.print_exc()
+        Qt.QObject.emit(self._parent,Qt.SIGNAL(self._name))
     def connect(self,callback):
-        #self.error("Trying a connect on MyQtSignal(%s)"%(self._name))
-        #raise Exception("Invalid")
-        self._cb.append(callback)
+        self.error("Trying a connect on MyQtSignal(%s)"%(self._name))
+        raise Exception("Invalid")
+        #self._cb.append(callback)
 
 class nditer(Logger):
     '''This class is made to emulate np.nditer for too old numpy versions.
@@ -109,6 +110,9 @@ class FdlFile(Logger,Qt.QObject):
             Qt.QObject.__init__(self, parent=None)
         except:#backward compatibility to pyqt 4.4.3
             Qt.QObject.__init__(self)
+            self.step._parent = self
+            self.done._parent = self
+            self.aborted._parent = self
         self._filename = filename
         self._loadErrorRate=loadErrorRate
         self._signals = {}
@@ -294,9 +298,12 @@ class FdlFile(Logger,Qt.QObject):
     
     def _isCompleteSignalSet(self):
         nextExpectedSeparator = self._iterator.iterindex+self._nsignals+1
-        if self._values[nextExpectedSeparator] == SEPARATOR:
-            return True
-        return False
+        try:
+            if self._values[nextExpectedSeparator] == SEPARATOR:
+                return True
+            return False
+        except Exception,e:
+            return False
     
     def _isEndOfFile(self):
         return self._iterator.iterindex + self._nsignals \

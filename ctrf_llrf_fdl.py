@@ -196,13 +196,33 @@ class MainWindow(TaurusMainWindow):
         self.prepareProgressBar()
         if len(selection['Loops']) > 0:
             self._loopsParser = LoopsFile(selection['Loops'])
-            self._loopsParser.step.connect(self.updateProgressBar)
-            self._loopsParser.done.connect(self.endProgressBar)
+            try:#normal way
+                self._loopsParser.step.connect(self.updateProgressBar)
+            except:#backward compatibility to pyqt 4.4.3
+                Qt.QObject.connect(self._loopsParser,
+                                   Qt.SIGNAL('step'),
+                                   self.updateProgressBar)
+            try:#normal way
+                self._loopsParser.done.connect(self.endProgressBar)
+            except:#backward compatibility to pyqt 4.4.3
+                Qt.QObject.connect(self._loopsParser,
+                                   Qt.SIGNAL('done'),
+                                   self.endProgressBar)
             self._loopsParser.process()
         elif len(selection['Diag']) > 0:
             self._diagParser = DiagnosticsFile(selection['Diag'])
-            self._diagParser.step.connect(self.updateProgressBar)
-            self._diagParser.done.connect(self.endProgressBar)
+            try:#normal way
+                self._diagParser.step.connect(self.updateProgressBar)
+            except:#backward compatibility to pyqt 4.4.3
+                Qt.QObject.connect(self._diagParser,
+                                   Qt.SIGNAL('step'),
+                                   self.updateProgressBar)
+            try:#normal way
+                self._diagParser.done.connect(self.endProgressBar)
+            except:#backward compatibility to pyqt 4.4.3
+                Qt.QObject.connect(self._diagParser,
+                                   Qt.SIGNAL('done'),
+                                   self.endProgressBar)
             self._diagParser.process()
         #facade and plotting:
         self.facadeManagerBuilder(selection['facade'],selection['beamCurrent'])
@@ -349,15 +369,20 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
     try:#normal way
         closeApp = QtCore.pyqtSignal()
         selectionDone = QtCore.pyqtSignal()
+        backward = False
     except:#backward compatibility to pyqt 4.4.3
         closeApp = MyQtSignal('closeApp')
         selectionDone = MyQtSignal('selectionDone')
+        backward = True
     
     def __init__(self, parent=None):
         Qt.QDialog.__init__(self, parent)
         name = "LoadFileDialog"
         self.call__init__(TaurusBaseComponent, name, parent=parent,
                           designMode=False)
+        if self.backward:
+            self.closeApp._parent = self
+            self.selectionDone._parent = self
         self._parent = parent
         self.resize(500, 200)
         #self.ui = Ui_fileLoader()
@@ -550,6 +575,7 @@ class FacadeManager(Logger,Qt.QObject):
             Qt.QObject.__init__(self, parent=None)
         except:#backward compatibility to pyqt 4.4.3
             Qt.QObject.__init__(self)
+            self.change._parent = self
         self._facadeInstanceName = facadeInstanceName
         self._facadeAdjustments = facadeAdjustments()
         self._beamCurrent = beamCurrent#mA
@@ -912,7 +938,12 @@ class Plotter(Logger):
         self._facade = parent._facade
         self._loops = loopsSignals
         self._diag = diagSignals
-        self._facade.change.connect(self.forcePlot)
+        try:#normal way
+            self._facade.change.connect(self.forcePlot)
+        except:#backward compatibility to pyqt 4.4.3
+            Qt.QObject.connect(self._facade,
+                               Qt.SIGNAL('change'),
+                               self.forcePlot)
         self._startDisplay = self.startDisplay
         self._endDisplay = self.endDisplay
         self._decimation = self.decimation
