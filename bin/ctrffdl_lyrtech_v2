@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cd $SICILIA/lib/python/site-packages/ctrf_llrf_fdl
+python ctrf_llrf_fdl.py --taurus-log-level=debug
