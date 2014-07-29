@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/FacadeAdjustments.ui'
 #
-# Created: Mon Jul 28 15:48:36 2014
+# Created: Tue Jul 29 10:57:18 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -17,14 +17,14 @@ except AttributeError:
 class Ui_facadeAdjustments(object):
     def setupUi(self, facadeAdjustments):
         facadeAdjustments.setObjectName(_fromUtf8("facadeAdjustments"))
-        facadeAdjustments.resize(343, 397)
+        facadeAdjustments.resize(343, 453)
         self.gridLayout_4 = QtGui.QGridLayout(facadeAdjustments)
         self.gridLayout_4.setObjectName(_fromUtf8("gridLayout_4"))
         self.scrollArea = QtGui.QScrollArea(facadeAdjustments)
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName(_fromUtf8("scrollArea"))
         self.scrollAreaWidgetContents = QtGui.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 329, 383))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 329, 439))
         self.scrollAreaWidgetContents.setObjectName(_fromUtf8("scrollAreaWidgetContents"))
         self.gridLayout = QtGui.QGridLayout(self.scrollAreaWidgetContents)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))

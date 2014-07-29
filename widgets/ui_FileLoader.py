@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/FileLoader.ui'
 #
-# Created: Mon Jul 28 15:01:04 2014
+# Created: Tue Jul 29 08:05:09 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -55,9 +55,6 @@ class Ui_fileLoader(object):
         self.locationCombo.setObjectName(_fromUtf8("locationCombo"))
         self.fineTuneLayout.addWidget(self.locationCombo, 0, 4, 1, 1)
         self.beamCurrentValue = QtGui.QDoubleSpinBox(fileLoader)
-        self.beamCurrentValue.setMinimum(1.0)
-        self.beamCurrentValue.setMaximum(400.0)
-        self.beamCurrentValue.setProperty("value", 100.0)
         self.beamCurrentValue.setObjectName(_fromUtf8("beamCurrentValue"))
         self.fineTuneLayout.addWidget(self.beamCurrentValue, 0, 1, 1, 1)
         self.gridLayout_4.addLayout(self.fineTuneLayout, 3, 0, 1, 2)
@@ -94,7 +91,6 @@ class Ui_fileLoader(object):
         self.locationLabel.setText(QtGui.QApplication.translate("fileLoader", "RF plant:", None, QtGui.QApplication.UnicodeUTF8))
         self.beamCurrentLabel.setText(QtGui.QApplication.translate("fileLoader", "Beam current", None, QtGui.QApplication.UnicodeUTF8))
         self.facadeLabel.setText(QtGui.QApplication.translate("fileLoader", "Facade:", None, QtGui.QApplication.UnicodeUTF8))
-        self.beamCurrentValue.setSuffix(QtGui.QApplication.translate("fileLoader", " mA", None, QtGui.QApplication.UnicodeUTF8))
         self.diagGroup.setTitle(QtGui.QApplication.translate("fileLoader", "Diagnostics file name:", None, QtGui.QApplication.UnicodeUTF8))
         self.diagFileDialog.setText(QtGui.QApplication.translate("fileLoader", "...", None, QtGui.QApplication.UnicodeUTF8))
         self.loopsGroup.setTitle(QtGui.QApplication.translate("fileLoader", "Loops file name:", None, QtGui.QApplication.UnicodeUTF8))

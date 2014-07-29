@@ -26,12 +26,6 @@
      <property name="alignment">
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
-     <property name="suffix">
-      <string> ms</string>
-     </property>
-     <property name="maximum">
-      <double>411.000000000000000</double>
-     </property>
     </widget>
    </item>
    <item row="0" column="0">
@@ -46,12 +40,6 @@
      <property name="alignment">
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
-     <property name="minimum">
-      <number>1</number>
-     </property>
-     <property name="maximum">
-      <number>1000</number>
-     </property>
     </widget>
    </item>
    <item row="1" column="0">
@@ -65,15 +53,6 @@
     <widget class="QDoubleSpinBox" name="endValue">
      <property name="alignment">
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-     </property>
-     <property name="suffix">
-      <string> ms</string>
-     </property>
-     <property name="maximum">
-      <double>411.000000000000000</double>
-     </property>
-     <property name="value">
-      <double>411.000000000000000</double>
      </property>
     </widget>
    </item>

@@ -32,26 +32,81 @@
 from taurus.core.util import Logger
 import numpy as np
 import scipy as sp
-from taurus.external.qt import Qt,QtGui,QtCore,Qwt5
+try:#normal way
+    from taurus.external.qt import Qt,QtGui,QtCore,Qwt5
+except:#backward compatibility to pyqt 4.4.3
+    from taurus.qt import Qt,QtGui,QtCore,Qwt5
 from threading import Thread,Event
 from math import sqrt
 from copy import copy
 import traceback
+from time import time
 
 from Signals import *
 
 SEPARATOR = 0x7FFF
 LOAD_ERROR_RATE = 0.01
 
+class MyQtSignal(Logger):
+    '''This class is made to emulate the pyqtSignals for too old pyqt versions.
+    '''
+    def __init__(self,name):
+        Logger.__init__(self)
+        self._name = name
+        self._cb = []
+    def emit(self):
+        self.info("Signal %s emit (%s)"%(self._name,self._cb))
+        for i,cb in enumerate(self._cb):
+            try:
+                cb()
+            except Exception,e:
+                self.error("Cannot do the %dth callback for %s: %s"
+                           %(i,self._name,e))
+                traceback.print_exc()
+        Qt.SIGNAL(self._name)
+    def connect(self,callback):
+        #self.error("Trying a connect on MyQtSignal(%s)"%(self._name))
+        #raise Exception("Invalid")
+        self._cb.append(callback)
+
+class nditer(Logger):
+    '''This class is made to emulate np.nditer for too old numpy versions.
+    '''
+    def __init__(self,data):
+        self._data = data
+        self.iterindex = 0
+#    @property
+#    def iterindex(self):
+#        return self._index
+    @property
+    def itersize(self):
+        return len(self._data)
+    @property
+    def value(self):
+        return self._data[self.iterindex]
+    def next(self):
+        self.iterindex+=1
+        try:
+            return self._data[self.iterindex]
+        except:
+            raise StopIteration("Out of range")
 
 class FdlFile(Logger,Qt.QObject):
-    step = QtCore.pyqtSignal()
-    done = QtCore.pyqtSignal()
-    aborted = QtCore.pyqtSignal()
+    try:#normal way
+        step = QtCore.pyqtSignal()
+        done = QtCore.pyqtSignal()
+        aborted = QtCore.pyqtSignal()
+    except:#backward compatibility to pyqt 4.4.3
+        step = MyQtSignal('step')
+        done = MyQtSignal('done')
+        aborted = MyQtSignal('aborted')
     
     def __init__(self,filename,loadErrorRate=LOAD_ERROR_RATE):
         Logger.__init__(self)
-        Qt.QObject.__init__(self, parent=None)
+        try:#normal way
+            Qt.QObject.__init__(self, parent=None)
+        except:#backward compatibility to pyqt 4.4.3
+            Qt.QObject.__init__(self)
         self._filename = filename
         self._loadErrorRate=loadErrorRate
         self._signals = {}
@@ -65,6 +120,7 @@ class FdlFile(Logger,Qt.QObject):
         self._anomalies = []
         self._percentage = 0
         self._processThread = None
+        self._t0 = None
         self._interrupt = Event()
         self._interrupt.clear()
 
@@ -79,7 +135,10 @@ class FdlFile(Logger,Qt.QObject):
         self._values = np.ndarray(buffer=raw,
                                   shape=size,
                                   dtype=np.int16)
-        self._iterator = np.nditer(self._values)
+        try:#normal way
+            self._iterator = np.nditer(self._values)
+        except:#backward compatibility to numpy 1.3.0
+            self._iterator = nditer(self._values)
         self._offset = self._nextSeparator()
         self.info("First tag found in position %d. Sets size %d "\
                   "(including the separator)"
@@ -106,6 +165,7 @@ class FdlFile(Logger,Qt.QObject):
         self._processThread.start()
     
     def doProcessThreading(self):
+        self._t0 = time()
         self._percentage = 0
         self.step.emit()
         try:
@@ -117,8 +177,10 @@ class FdlFile(Logger,Qt.QObject):
                 else:
                     prevSeparator = self._iterator.iterindex
                     nextSeparator = self._nextSeparator()
+                    if nextSeparator == -1:
+                        break
                     distance = nextSeparator-prevSeparator
-                    self._offset = self._offset+distance%(self._nsignals+1)
+                    self._offset = (self._offset+distance)%(self._nsignals+1)
                     self.warning("found an anomaly in %d: distance %d != %d "\
                                  "(new offset %d)"
                                  %(prevSeparator,distance,
@@ -148,6 +210,7 @@ class FdlFile(Logger,Qt.QObject):
             else:
                 self.aborted.emit()
                 self.warning("Process aborted: %d%%"%(self._percentage))
+            self.info("Process has take %g seconds"%(time()-self._t0))
             return True
         except Exception,e:
             self.error("file process cannot be completed! Exception: %s"%(e))
@@ -200,7 +263,7 @@ class FdlFile(Logger,Qt.QObject):
             return rate
         return 0
     def isProcessing(self):
-        return self._processThread.isAlive()
+        return self._processThread.isAlive() and not self._percentage == 100
     #--- done auxiliar resources area
     ####
     
@@ -209,7 +272,12 @@ class FdlFile(Logger,Qt.QObject):
     def _nextSeparator(self):
         #when this method is called from a separator, move next. do-while like
         if self._iterator.value == SEPARATOR:
-            self._iterator.next()
+            #check if next can be where is expected
+            if self._isCompleteSignalSet():
+                self._iterator.iterindex += self._nsignals+1
+                return self._iterator.iterindex
+            else:
+                self._iterator.next()
         #iterate until found the next
         while not self._iterator.value == SEPARATOR:
             try:
@@ -219,6 +287,7 @@ class FdlFile(Logger,Qt.QObject):
                 return -1
             except Exception,e:
                 self.error("Exception searching next separator")
+                return -1
         return self._iterator.iterindex
     
     def _isCompleteSignalSet(self):
