@@ -152,6 +152,26 @@ class FdlFile(Logger,Qt.QObject):
     
     def _prepare(self):
         self.prepareSignalSet()
+    
+    def hasI(self,name):
+        '''Check if with the given name, in the SignalFields dictionary there
+           is a key with 'I' and it points to a field known of this type 
+           (Loops or diag).
+        '''
+        return SignalFields[name].has_key('I') and \
+               SignalFields[name]['I'] in self._fields.keys()
+    def hasQ(self,name):
+        '''Check if with the given name, in the SignalFields dictionary there
+           is a key with 'Q' and it points to a field known of this type 
+           (Loops or diag).
+        '''
+        return SignalFields[name].has_key('Q') and \
+               SignalFields[name]['Q'] in self._fields.keys()
+    def prepareSignalSet(self):
+        for keyName in SignalFields.keys():
+            if self.hasI(keyName) and self.hasQ(keyName):
+                self._signals[keyName] = []
+        self.debug("prepared the signal set: %s"%(self._signals.keys()))
     #--- done preparation area
     ####
     
@@ -306,8 +326,17 @@ class FdlFile(Logger,Qt.QObject):
             return False
     
     def _isEndOfFile(self):
-        return self._iterator.iterindex + self._nsignals \
+        try:
+            return self._iterator.iterindex + self._nsignals \
                                                       > self._iterator.itersize
+        except ValueError,e:
+            if e == 'Iterator is past the end':
+                self.debug("End of File with known exception")
+            else:
+                self.warning("Iterator value error: %s"%(e))
+        except Exception,e:
+            self.error("Exception checking EoF: %s"%(e))
+        return True
     #--- done internal area
     ####
 
@@ -316,21 +345,22 @@ class LoopsFile(FdlFile):
         self._fields = LoopsFields
         FdlFile.__init__(self,filename)
         self._name = 'Loops'
+
     ####
     #--- preparation area
     def prepareSignalSet(self):
-        for k in SignalFields.keys():
-            if SignalFields[k].has_key('I') and SignalFields[k].has_key('Q'):
-                self._signals[k] = []
+        for keyName in SignalFields.keys():
+            if self.hasI(keyName) and self.hasQ(keyName):
+                self._signals[keyName] = []
+        self.debug("prepared the signal set: %s"%(self._signals.keys()))
     def processSignalSet(self):
-        for k in SignalFields.keys():
-            if SignalFields[k].has_key('I') and SignalFields[k].has_key('Q'):
-                I_tag = SignalFields[k]['I']
-                I = self._values[self._iterator.iterindex+LoopsFields[I_tag]]
-                Q_tag = SignalFields[k]['Q']
-                Q = self._values[self._iterator.iterindex+LoopsFields[Q_tag]]
-                Ampl = (sqrt((I**2)+(Q**2)))/32767*1000
-                self._signals[k].append(Ampl)
+        for keyName in self._signals.keys():
+            I_tag = SignalFields[keyName]['I']
+            I = self._values[self._iterator.iterindex+LoopsFields[I_tag]]
+            Q_tag = SignalFields[keyName]['Q']
+            Q = self._values[self._iterator.iterindex+LoopsFields[Q_tag]]
+            Ampl = (sqrt((I**2)+(Q**2)))/32767*1000
+            self._signals[keyName].append(Ampl)
     #--- done preparation area
     ####
 
@@ -339,12 +369,23 @@ class DiagnosticsFile(FdlFile):
         self._fields = DiagFields
         FdlFile.__init__(self,filename,loadErrorRate)
         self._name = 'Diag'
+    def hasI(self,name):
+        return SignalFields[name].has_key('I') and \
+               SignalFields[name]['I'] in DiagFields.keys()
+    def hasQ(self,name):
+        return SignalFields[name].has_key('Q') and \
+               SignalFields[name]['Q'] in DiagFields.keys()
     ####
     #--- preparation area
-    def prepareSignalSet(self):
-        pass
+
     def processSignalSet(self):
-        pass
+        for keyName in self._signals.keys():
+            I_tag = SignalFields[keyName]['I']
+            I = self._values[self._iterator.iterindex+DiagFields[I_tag]]
+            Q_tag = SignalFields[keyName]['Q']
+            Q = self._values[self._iterator.iterindex+DiagFields[Q_tag]]
+            Ampl = (sqrt((I**2)+(Q**2)))/32767*1000
+            self._signals[keyName].append(Ampl)
     #--- done preparation area
     ####
 

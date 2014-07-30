@@ -85,9 +85,17 @@ y2 = Qwt5.QwtPlot.Axis(1)
 #--- done dictionary keywords
 ####
 
-SignalFields = {'CavVolt_mV':    {I:'Cav_I',  Q:'Cav_Q'  },
-                'FwCav_mV':      {I:'FwCav_I',Q:'FwCav_Q'},
-                'RvCav_mV':      {I:'RvCav_I',Q:'RvCav_Q'},
+SignalFields = {#Loops signals
+                'CavVolt_mV':    {I:'Cav_I',      Q:'Cav_Q'  },
+                'FwCav_mV':      {I:'FwCav_I',    Q:'FwCav_Q'},
+                'RvCav_mV':      {I:'RvCav_I',    Q:'RvCav_Q'},
+                #Diag signals
+                'SSA1Input':     {I:'SSA1Input_I',Q:'SSA1Input_Q',
+                                  gui:    {tab:'Diag',
+                                           plot:'topLeft',
+                                           axis:y1,
+                                           color:'Black'}},
+                #fitted signals
                 'CavVolt_kV':    {vble:   'CavVolt_mV',
                                   slope:  'CAV_VOLT_KV_m',
                                   loffset:'CAV_VOLT_KV_n',
@@ -104,6 +112,7 @@ SignalFields = {'CavVolt_mV':    {I:'Cav_I',  Q:'Cav_Q'  },
                 'RvCav_kW':      {vble:   'RvCav_mV',
                                   couple: 'RvCav_kW_c',
                                   qoffset:'RvCav_kW_o',},
+                #formula signals
                 'PBeam_kW':      {formula:'FwCav_kW-RvCav_kW-PDisCav_kW',
                                   handler:'loops',
                                   depend: ['FwCav_kW','RvCav_kW',
@@ -140,13 +149,12 @@ LoopsFields = {'separator':     0,'FwCavPhase':    1,#0
 #Correspondence of signals structure. 
 #Section 6.1 table 6 of the documentation v2 from 20140620
 #FIXME: what about this position 1!!
-DiagFields = { 0:'separator',   1:'??',         #0  
-               2:'SSA1Input_I', 3:'SSA1Input_Q',#1
-               4:'SSA2Input_I', 5:'SSA2Input_Q',#2
-               6:'FwCircIn_I',  7:'FwCircIn_Q', #3
-               8:'FwCircOut_I', 9:'FwCircOut_Q',#4
-              10:'RvCircOut_I',11:'RvCircOut_Q',#5
-              12:'RvLoad_I',   13:'RvLoad_Q',   #6
-              14:'RvIOT1_I',   15:'RvIOT1_Q',   #7
-              16:'RvIOT2_I',   17:'RvIOT2_Q'    #8
-             }
+DiagFields = {'separator':   0,'??':          1,#0  
+              'SSA1Input_I': 2,'SSA1Input_Q': 3,#1
+              'SSA2Input_I': 4,'SSA2Input_Q': 5,#2
+              'FwCircIn_I':  6,'FwCircIn_Q':  7,#3
+              'FwCircOut_I': 8,'FwCircOut_Q': 9,#4
+              'RvCircOut_I':10,'RvCircOut_Q':11,#5
+              'RvLoad_I':   12,'RvLoad_Q':   13,#6
+              'RvIOT1_I':   14,'RvIOT1_Q':   15,#7
+              'RvIOT2_I':   16,'RvIOT2_Q':   17}#8

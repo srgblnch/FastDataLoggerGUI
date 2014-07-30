@@ -82,7 +82,7 @@ class MainWindow(TaurusMainWindow):
                            self.loadFile)
         Qt.QObject.connect(self.ui.cancelButton,
                            Qt.SIGNAL('clicked(bool)'),
-                           self.cancell)
+                           self.cancel)
         #Like the button add also the loadFile to the menu
         self.loadFileAction = Qt.QAction(getThemeIcon("document-open"),
                                          'Open Files...',self)
@@ -187,7 +187,7 @@ class MainWindow(TaurusMainWindow):
     def closeLoaderWidget(self):
         self.info("closeLoaderWidget()")
         self._loader.hide()
-        #self._loader = None
+        self._loader = None
     def prepare(self):
         selection = self._loader.getSelection()
         self.info("prepare(): %s"%(str(selection)))
@@ -209,7 +209,7 @@ class MainWindow(TaurusMainWindow):
                                    Qt.SIGNAL('done'),
                                    self.endProgressBar)
             self._loopsParser.process()
-        elif len(selection['Diag']) > 0:
+        if len(selection['Diag']) > 0:
             self._diagParser = DiagnosticsFile(selection['Diag'])
             try:#normal way
                 self._diagParser.step.connect(self.updateProgressBar)
@@ -231,7 +231,7 @@ class MainWindow(TaurusMainWindow):
         self.signalProcessorBuilder()
         self.plotManagerBuilder()
         self._loader = None
-    def cancell(self):
+    def cancel(self):
         if self._loopsParser != None:
             self._loopsParser.abort()
         if self._diagParser != None:
@@ -511,22 +511,22 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         self.panel().facadeCombo.setCurrentIndex(newIndex)
         
     def getSelection(self):
-#        selection = {'Loops':self._loopsFile,
-#                     'Diag':self._diagFile,
-#                     'plant':self._plant.completeName,
-#                     'facade':self._plant.facadeInstanceName,
-#                     'beamCurrent':self.getBeamCurrent()}
-        selection = {}
-        self.debug("Selection: Loops = %s"%(self._loopsFile))
-        selection['Loops'] = self._loopsFile
-        self.debug("Selection: Diag = %s"%(self._diagFile))
-        selection['Diag'] = self._diagFile
-        self.debug("Selection: plant = %s"%(self._plant.completeName))
-        selection['plant'] = self._plant.completeName
-        self.debug("Selection: facade = %s"%(self._plant.facadeInstanceName))
-        selection['facade'] = self._plant.facadeInstanceName
-        self.debug("Selection: BeamCurrent = %f"%(self.getBeamCurrent()))
-        selection['beamCurrent'] = self.getBeamCurrent()
+        selection = {'Loops':self._loopsFile,
+                     'Diag':self._diagFile,
+                     'plant':self._plant.completeName,
+                     'facade':self._plant.facadeInstanceName,
+                     'beamCurrent':self.getBeamCurrent()}
+#        selection = {}
+#        self.debug("Selection: Loops = %s"%(self._loopsFile))
+#        selection['Loops'] = self._loopsFile
+#        self.debug("Selection: Diag = %s"%(self._diagFile))
+#        selection['Diag'] = self._diagFile
+#        self.debug("Selection: plant = %s"%(self._plant.completeName))
+#        selection['plant'] = self._plant.completeName
+#        self.debug("Selection: facade = %s"%(self._plant.facadeInstanceName))
+#        selection['facade'] = self._plant.facadeInstanceName
+#        self.debug("Selection: BeamCurrent = %f"%(self.getBeamCurrent()))
+#        selection['beamCurrent'] = self.getBeamCurrent()
         
         self.info("selection: %s"%(selection))
         return selection
@@ -1093,7 +1093,42 @@ class Plotter(Logger):
                 except Exception,e:
                     self.error("Exception plotting %s: %s"%(signalName,e))
     def plotDiag(self):
-        pass
+        self.debug("preparing to plot 'Diag': %s"%(self._diag.keys()))
+        for signalName in self._diag.keys():
+            if type(self._diag[signalName]) == list:
+                self.warning("Signal %s not ready to be plotted"%(signalName))
+            elif not SignalFields[signalName].has_key('gui'):
+                self.debug("Signal %s is not configured to be plotted."
+                           %(signalName))
+            else:
+                self.debug("Signal %s will be plotted"%(signalName))
+                try:
+                    #cut the incomming signal by the [start:end] delimiters
+                    pointTime = TOTAL_TIME/self._diag[signalName].size
+                    self.debug("Each sample point means %g ms (%d points)"
+                              %(pointTime,self._diag[signalName].size))
+                    startPoint = int(self._startDisplay/pointTime)
+                    self.debug("With a start display at %g ms, "\
+                              "point %d the first displayed"
+                              %(self._startDisplay,startPoint))
+                    endPoint = int(self._endDisplay/pointTime)
+                    self.debug("With a end display at %g ms, "\
+                              "point %d the last displayed"
+                              %(self._endDisplay,endPoint))
+                    y = self._diag[signalName]\
+                                         [startPoint:endPoint:self._decimation]
+                    x = np.linspace(self._startDisplay,self._endDisplay,y.size)
+                    signal = {'title':signalName,'x':x,'y':y}
+                    tab = SignalFields[signalName]['gui']['tab']
+                    plot = SignalFields[signalName]['gui']['plot']
+                    color = SignalFields[signalName]['gui']['color']
+                    axis =  SignalFields[signalName]['gui']['axis']
+                    curveProp = CurveAppearanceProperties(\
+                                                       lColor=Qt.QColor(color),
+                                                                    yAxis=axis)
+                    self._widgetsMap[tab][plot].attachRawData(signal,curveProp)
+                except Exception,e:
+                    self.error("Exception plotting %s: %s"%(signalName,e))
 
 def main():
     parser = argparse.get_taurus_parser()
