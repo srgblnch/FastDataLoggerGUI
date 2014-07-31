@@ -1,5 +1,5 @@
 ###############################################################################
-## file :               Signals.py
+## file :               FdlSignals.py
 ##
 ## description :        This file has been made to provide interface FDL files.
 ##
@@ -124,19 +124,10 @@ SignalFields = {#Loops signals
                                   handler:'loops',
                                   depend: ['FwCav_kW','RvCav_kW',
                                            'PDisCav_kW']},
-                'bar': {formula:'PBeam_kW*1000/BeamCurrent/CavVolt_kV',
-                       handler:'loops',
-                       depend:['PBeam_kW','CavVolt_kV'],
-                       gui:    {tab:'Loops1',
-                                           plot:'topRight',
-                                           axis:y1,
-                                           color:'Cyan'}
-                        },
                 'BeamPhase':     {formula:\
-                     #'180-arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV)*180/pi',
-                     '180-arcsin(bar)*180/pi',
+                     '180-arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV)*180/pi',
                                   handler:'loops',
-                                  depend: ['bar'],#['PBeam_kW','CavVolt_kV'],
+                                  depend: ['PBeam_kW','CavVolt_kV'],
                                   gui:    {tab:'Loops1',
                                            plot:'topLeft',
                                            axis:y2,
