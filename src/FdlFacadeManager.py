@@ -29,13 +29,19 @@
 ##
 ###############################################################################
 
+import taurus
 from taurus.core.util import Logger
 try:#normal way
-    from taurus.external.qt import Qt,QtCore
+    from taurus.external.qt import Qt,QtGui,QtCore
 except:#backward compatibility to pyqt 4.4.3
-    from taurus.qt import Qt
+    from taurus.qt import Qt,QtGui
     from FdlFileParser import MyQtSignal
 from PyTango import DevFailed
+
+from FdlSignals import SignalFields
+from facadeadjustments import facadeAdjustments
+
+FACADES_SERVERNAME = 'LLRFFacade'
 
 class FacadeManager(Logger,Qt.QObject):
     try:#normal way
