@@ -50,7 +50,8 @@ from PyTango import DevFailed
 
 from ui_MainView import Ui_FastDataLoggerDLLRF
 from fileloader import fileLoader
-from FdlFileParser import LoopsFile,DiagnosticsFile,SignalFields
+from FdlFileParser import LoopsFile,DiagnosticsFile
+from FdlSignals import SignalFields,y2
 from facadeadjustments import facadeAdjustments
 
 FACADES_SERVERNAME = 'LLRFFacade'
@@ -151,18 +152,27 @@ class MainWindow(TaurusMainWindow):
                     self.info("Close event confirmed, "\
                               "cancelling the diagnostics file processing.")
                     self._diagParser.abort()
-                if self._facade != None:
-                    if hasattr(self._facade,"_facadeAdjustments"):
-                        self._facade._facadeAdjustments = None
-                    self._facade.cancelFacade()
+#                if self._facade != None:
+#                    if hasattr(self._facade,"_facadeAdjustments"):
+#                        self._facade._facadeAdjustments = None
+#                    self._facade.cancelFacade()
+                self._closeFacadeDialog()
                 event.accept()
             else:
+                self._closeFacadeDialog()
                 self.warning("User cancelled the close event!")
                 event.ignore()
         else:
+            self._closeFacadeDialog()
             self.info("close event, without pending task: "\
                       "no confirmation required.")
             event.accept()
+    
+    def _closeFacadeDialog(self):
+        if self._facade != None:
+            #if hasattr(self._facade,"_facadeAdjustments"):
+                #self._facade._facadeAdjustments = None
+            self._facade.cancelFacade()
     
     ####
     #--- Load file section
@@ -580,12 +590,12 @@ class FacadeManager(Logger,Qt.QObject):
         self._facadeAdjustments = facadeAdjustments()
         self._beamCurrent = beamCurrent#mA
         self._facadeAttrWidgets = \
-            {'CavVolt_kV':
-                {'m':self._facadeAdjustments._ui.cavityVoltsMValue,
-                 'n':self._facadeAdjustments._ui.cavityVoltsNValue},
-             'PDisCav_kW':
-                {'c':self._facadeAdjustments._ui.PDIsCavCValue,
-                 'o':self._facadeAdjustments._ui.PDIsCavOValue},
+            {'CavVolt_mV':
+                {'m':self._facadeAdjustments._ui.cavityVolts_mV_MValue,
+                 'n':self._facadeAdjustments._ui.cavityVolts_mV_NValue},
+             'CavVolt_kV':
+                {'m':self._facadeAdjustments._ui.cavityVolts_kV_MValue,
+                 'n':self._facadeAdjustments._ui.cavityVolts_kV_NValue},
              'FwCav_kW':
                 {'c':self._facadeAdjustments._ui.FwCavCValue,
                  'o':self._facadeAdjustments._ui.FwCavOValue},
@@ -754,7 +764,10 @@ class FacadeManager(Logger,Qt.QObject):
                                           button(QtGui.QDialogButtonBox.Cancel)
     def cancelFacade(self):
         self.info("Canceled parameter adjusted by hand by the user!")
-        self._facadeAdjustments.hide()
+        if hasattr(self,'_facadeAdjustments') and \
+           self._facadeAdjustments != None:
+            self._facadeAdjustments.hide()
+            self._facadeAdjustments = None
 
     def getMandNs(self,signalName):
         if signalName in self._fromFacade.keys():
@@ -776,13 +789,28 @@ class FacadeManager(Logger,Qt.QObject):
         else:
             return (None,None)#FIXME
 
-class SignalProcessor(Logger):
+class SignalProcessor(Logger,Qt.QObject):
+    try:#normal way
+        change = QtCore.pyqtSignal()
+    except:#backward compatibility to pyqt 4.4.3
+        change = MyQtSignal('change')
     def __init__(self,parent,loopsSignals=None,diagSignals=None):
         Logger.__init__(self)
+        try:#normal way
+            Qt.QObject.__init__(self, parent=None)
+        except:#backward compatibility to pyqt 4.4.3
+            Qt.QObject.__init__(self)
+            self.change._parent = self
         self._parent = parent
         self._facade = parent._facade
         self._loops = loopsSignals
         self._diag = diagSignals
+        try:#normal way
+            self._facade.change.connect(self.process)
+        except:#backward compatibility to pyqt 4.4.3
+            Qt.QObject.connect(self._facade,
+                               Qt.SIGNAL('change'),
+                               self.process)
     def process(self):
         '''collect all signal keys splitting in 3 categories
            1.- pure file signals
@@ -814,20 +842,39 @@ class SignalProcessor(Logger):
                    %(len(formulaSignals),formulaSignals))
         self.warning("%d orphane signals: %s"
                      %(len(orphaneSignals),orphaneSignals))
-        for signal in facadeSignals:
+        lastPendingFacadeSignals = [0]*len(facadeSignals)+[len(facadeSignals)]
+        #FIXME: refactoring those two loops, they are now almost the same
+        while facadeSignals != [] and len(set(lastPendingFacadeSignals)) != 1:
+            signal = facadeSignals[0]
             try:
-                self.calculate(signal)
-                doneSignals.append(signal)
-                self.debug("made the calculation for facade signal %s"
-                           %(signal))
+                dependencies = [SignalFields[signal]['x']]#Diff with formula
+                unsatisfied = list(set(dependencies).difference(doneSignals))
+                if len(unsatisfied) == 0:
+                    try:
+                        self.calculate(signal)
+                        facadeSignals.pop(facadeSignals.index(signal))
+                        doneSignals.append(signal)
+                    except Exception,e:
+                        self.error("Exception calculating %s: %s"%(signal,e))
+                    else:
+                        self.debug("%d signals calculated: %s"
+                                   %(len(doneSignals),doneSignals))
+                else:
+                    #move to the last to retry
+                    facadeSignals.append(facadeSignals.pop(0))
+                    self.warning("formula signal %s cannot be yet calculated "\
+                                 "due to unsatisfied %s"%(signal,unsatisfied))
             except Exception,e:
-                self.error("Exception calculating %s: %s"%(signal,e))
+                self.error("Exception with %s dependencies: %s"%(signal,e))
+                break
             else:
-                self.debug("%d signals calculated: %s"
-                           %(len(doneSignals),doneSignals))
-        lastPendingFormulaSignals = [0,0,len(formulaSignals)]
+                lastPendingFacadeSignals.pop(0)
+                lastPendingFacadeSignals.append(len(facadeSignals))
+                self.debug("Three last loops formula pernding signals: %s"
+                           %(lastPendingFacadeSignals))
+        lastPendingFormulaSignals = [0]*len(formulaSignals)+[len(formulaSignals)]
         while formulaSignals != [] and \
-            len(set(lastPendingFormulaSignals)) != 1:
+              len(set(lastPendingFormulaSignals)) != 1:
             #while there are pending elements or 
             #last 3 loops didn't reduce the list
             signal = formulaSignals[0]
@@ -839,8 +886,6 @@ class SignalProcessor(Logger):
                         self.calculate(signal)
                         formulaSignals.pop(formulaSignals.index(signal))
                         doneSignals.append(signal)
-                        self.debug("made the calculation for formula signal %s"
-                                   %(signal))
                     except Exception,e:
                         self.error("Exception calculating %s: %s"%(signal,e))
                 else:
@@ -860,6 +905,7 @@ class SignalProcessor(Logger):
             self.error("process has not finished well. There are pending "\
                        "calculations: %s"%(formulaSignals))
             return False
+        self.change.emit()
         return True
     def calculate(self,signal):
         if self.isLinear(signal):
@@ -877,16 +923,23 @@ class SignalProcessor(Logger):
             self.info("Calculating %s using formula %s"
                       %(signal,SignalFields[signal]['f']))
             sources = self.mergeHandlers()
-            self.debug("Data sources: %s"%(sources.keys()))
+            #self.debug("Data sources: %s"%(sources.keys()))
             handler = self.getSignalHandler(signal)
-            handler[signal] = eval(SignalFields[signal]['f'],
+            try:
+                beamCurrent = self._facade.getBeamCurrent()
+                handler[signal] = eval(SignalFields[signal]['f'],
                                    {'arcsin':np.arcsin,'pi':np.pi,
-                                    'BeamCurrent':self._facade.getBeamCurrent()
-                                   },
+                                    'BeamCurrent':beamCurrent},
                                    sources)
-            #FIXME: the beam current should be user selected
+            except RuntimeWarning,e:
+                self.warning("Warning in %s eval: %s"%(signal,e))
+            except Exception,e:
+                self.error("Exception in %s eval: %s"%(signal,e))
         else:
             self.info("nothing to do with %s signal"%(signal))
+            return
+        self.debug("Made the calculation for the signal %s (%d values)"
+                   %(signal,len(handler[signal])))
     
     def getSignalHandler(self,signal):
         #FIXME: these ifs needs a refactoring
@@ -935,13 +988,13 @@ class Plotter(Logger):
     def __init__(self,parent,loopsSignals=None,diagSignals=None):
         Logger.__init__(self)
         self._parent = parent
-        self._facade = parent._facade
+        self._processor = parent._postProcessor
         self._loops = loopsSignals
         self._diag = diagSignals
         try:#normal way
-            self._facade.change.connect(self.forcePlot)
+            self._processor.change.connect(self.forcePlot)
         except:#backward compatibility to pyqt 4.4.3
-            Qt.QObject.connect(self._facade,
+            Qt.QObject.connect(self._processor,
                                Qt.SIGNAL('change'),
                                self.forcePlot)
         self._startDisplay = self.startDisplay
@@ -1090,6 +1143,8 @@ class Plotter(Logger):
                                                        lColor=Qt.QColor(color),
                                                                     yAxis=axis)
                     self._widgetsMap[tab][plot].attachRawData(signal,curveProp)
+                    if axis == y2:
+                        self._widgetsMap[tab][plot].autoShowYAxes()
                 except Exception,e:
                     self.error("Exception plotting %s: %s"%(signalName,e))
     def plotDiag(self):

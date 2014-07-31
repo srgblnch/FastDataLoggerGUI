@@ -42,9 +42,7 @@ from copy import copy
 import traceback
 from time import time
 
-from Signals import *
-
-from Signals import *
+from FdlSignals import *
 
 SEPARATOR = 0x7FFF
 LOAD_ERROR_RATE = 0.01
