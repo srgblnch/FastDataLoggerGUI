@@ -72,7 +72,6 @@ offset = 'n'
 couple = 'c'
 #formula evaluation signals
 formula = 'f'
-handler = 'h'
 depend = 'd'
 #descriptions for the graphical interface
 gui = 'gui'
@@ -170,14 +169,12 @@ SignalFields = {#Loops signals
                                            color:'Green'}},
                 #formula signals
                 'PDisCav_kW':    {formula:'(CavVolt_kV**2)/(10e6*2*3.3e8)',
-                                  handler:'loops',
                                   depend: ['CavVolt_kV'],
                                   gui:    {tab:'Loops1',
                                            plot:'topRight',
                                            axis:y2,
                                            color:'Red'}},
                 'PBeam_kW':      {formula:'FwCav_kW-RvCav_kW-PDisCav_kW',
-                                  handler:'loops',
                                   depend: ['FwCav_kW','RvCav_kW',
                                            'PDisCav_kW'],
                                   gui:    {tab:'Loops1',
@@ -186,13 +183,18 @@ SignalFields = {#Loops signals
                                            color:'Blue'}},
                 'BeamPhase':     {formula:\
                      '180-arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV)*180/pi',
-                                  handler:'loops',
                                   depend: ['PBeam_kW','CavVolt_kV'],
                                   gui:    {tab:'Loops1',
                                            plot:'topLeft',
                                            axis:y2,
                                            color:'Cyan'}},
-#                #'FwCav_Phase':   {formula:'arctan'}
+                'FwCav_Phase':   {formula:'arctan(FwCav_Q/FwCav_I)*180/pi+180',
+                         #arctan(Q/I)*180/pi+180 if I>0 else arctan(Q/I)*180/pi
+                                  depend: ['FwCav_Q','FwCav_I'],
+                                  gui:    {tab:'Loops1',
+                                           plot:'bottomLeft',
+                                           axis:y2,
+                                           color:'Cyan'}},
                }
 
 #Correspondence of signals structure. 

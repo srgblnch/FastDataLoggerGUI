@@ -29,7 +29,7 @@
 ##
 ###############################################################################
 
-from numpy import arcsin,pi
+import numpy as np
 from copy import copy
 
 from taurus.core.util import Logger
@@ -139,6 +139,9 @@ class SignalProcessor(Logger,Qt.QObject):
                 'facade':facadeFit,
                 'formula':withFormula,
                 'orphan':orphan}
+        
+    #FIXME: the next two methods would be merged in one, 
+    #       they are almost the same.
     def _doFacadeFits(self,categories):
         facadeSignals = categories['facade']
         calculated = categories['ready']
@@ -233,7 +236,9 @@ class SignalProcessor(Logger,Qt.QObject):
             try:
                 beamCurrent = self._getFacadesBeamCurrent()
                 self._signals[signal] = eval(SignalFields[signal][formula],
-                                   {'arcsin':arcsin,'pi':pi,
+                                   {'arcsin':np.arcsin,
+                                    'arctan':np.arctan,
+                                    'pi':np.pi,
                                     'BeamCurrent':beamCurrent},
                                    self._signals)
             except RuntimeWarning,e:
@@ -278,8 +283,7 @@ class SignalProcessor(Logger,Qt.QObject):
                SignalFields[signal].has_key(couple) and \
                SignalFields[signal].has_key(offset)
     def _isFormula(self,signal):
-        return SignalFields[signal].has_key(formula) and \
-               SignalFields[signal].has_key(handler)
+        return SignalFields[signal].has_key(formula)
 
 def fileLoader(fileName):
     import json
