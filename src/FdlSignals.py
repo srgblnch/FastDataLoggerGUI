@@ -122,6 +122,9 @@ SignalFields = {#Loops signals
                                       plot: 'middleRight',
                                       axis: y2,
                                       color:'Cyan'}},
+                'Dephase':      {field:'TuningDephase'},
+                'CavPhase':     {field:'CavityPhase'},
+                'FwCavPhase':   {field:'FwCavPhase'},
                 #Diag signals
                 'SSA1Input_I':  {field:'SSA1Input_I'},
                 'SSA1Input_Q':  {field:'SSA1Input_Q'},
@@ -190,11 +193,30 @@ SignalFields = {#Loops signals
                                            color:'Cyan'}},
                 'FwCav_Phase':   {formula:'arctan(FwCav_Q/FwCav_I)*180/pi+180',
                          #arctan(Q/I)*180/pi+180 if I>0 else arctan(Q/I)*180/pi
+                         #FIXME: there is an IF statement here
                                   depend: ['FwCav_Q','FwCav_I'],
                                   gui:    {tab:'Loops1',
                                            plot:'bottomLeft',
                                            axis:y2,
                                            color:'Cyan'}},
+                'Tuning_Dephase':{formula:'Dephase-1024/512*360',
+                                  depend: ['Dephase'],
+                                  gui:    {tab:'Loops1',
+                                           plot:'bottomRight',
+                                           axis:y1,
+                                           color:'Red'}},
+                'Tuning_CavPhase':{formula:'CavPhase-1024/512*360',
+                                  depend: ['CavPhase'],
+                                  gui:    {tab:'Loops1',
+                                           plot:'bottomRight',
+                                           axis:y1,
+                                           color:'Blue'}},
+                'Tuning_FwCavPhase':{formula:'FwCavPhase-1024/512*360',
+                                  depend: ['FwCavPhase'],
+                                  gui:    {tab:'Loops1',
+                                           plot:'bottomRight',
+                                           axis:y1,
+                                           color:'Green'}},
                }
 
 #Correspondence of signals structure. 
