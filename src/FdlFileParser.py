@@ -40,7 +40,7 @@ from threading import Thread,Event
 from math import sqrt
 from copy import copy
 import traceback
-from time import time
+import time
 
 from FdlSignals import *
 
@@ -57,13 +57,6 @@ class MyQtSignal(Logger):
         self._cb = []
     def emit(self):
         self.info("Signal %s emit (%s)"%(self._name,self._cb))
-#        for i,cb in enumerate(self._cb):
-#            try:
-#                cb()
-#            except Exception,e:
-#                self.error("Cannot do the %dth callback for %s: %s"
-#                           %(i,self._name,e))
-#                traceback.print_exc()
         Qt.QObject.emit(self._parent,Qt.SIGNAL(self._name))
     def connect(self,callback):
         self.error("Trying a connect on MyQtSignal(%s)"%(self._name))
@@ -76,9 +69,6 @@ class nditer(Logger):
     def __init__(self,data):
         self._data = data
         self.iterindex = 0
-#    @property
-#    def iterindex(self):
-#        return self._index
     @property
     def itersize(self):
         return len(self._data)
@@ -151,25 +141,32 @@ class FdlFile(Logger,Qt.QObject):
     def _prepare(self):
         self.prepareSignalSet()
     
-    def hasI(self,name):
-        '''Check if with the given name, in the SignalFields dictionary there
-           is a key with 'I' and it points to a field known of this type 
-           (Loops or diag).
+    def hasFileField(self,name):
+        '''Check if the given name has a field item in the SignalFields 
+           dictionary and it's also present in the fields for this type of 
+           FDL file (Loops|Diag).
         '''
-        return SignalFields[name].has_key('I') and \
-               SignalFields[name]['I'] in self._fields.keys()
-    def hasQ(self,name):
-        '''Check if with the given name, in the SignalFields dictionary there
-           is a key with 'Q' and it points to a field known of this type 
-           (Loops or diag).
+        return SignalFields[name].has_key(field) and \
+               SignalFields[name][field] in self._fields.keys()
+
+    def hasIandQ(self,name):
+        '''Check if the given name has a pair of items in the SignalFields 
+           dictionary describing I&Q to calculate an amplitude from Is&Qs 
+           collected on this FDL file type (Loops|Diag).
         '''
-        return SignalFields[name].has_key('Q') and \
-               SignalFields[name]['Q'] in self._fields.keys()
+        hasI = SignalFields[name].has_key(I) and \
+               self._signals.has_key(SignalFields[name][I])
+        hasQ = SignalFields[name].has_key(Q) and \
+               self._signals.has_key(SignalFields[name][Q])
+        #self.debug("signal %s hasI=%s and hasQ=%s"%(name,hasI,hasQ))
+        return hasI and hasQ
+
     def prepareSignalSet(self):
         for keyName in SignalFields.keys():
-            if self.hasI(keyName) and self.hasQ(keyName):
+            if self.hasFileField(keyName):
                 self._signals[keyName] = []
-        self.debug("prepared the signal set: %s"%(self._signals.keys()))
+        self.info("prepared the signal set (%d): %s"
+                  %(len(self._signals.keys()),self._signals.keys()))
     #--- done preparation area
     ####
     
@@ -188,8 +185,11 @@ class FdlFile(Logger,Qt.QObject):
             self._interrupt.clear()
         self._processThread.start()
     
+    def isProcessing(self):
+        return self._processThread.isAlive() and not self._percentage == 100
+    
     def doProcessThreading(self):
-        self._t0 = time()
+        self._t0 = time.time()
         self._percentage = 0
         self.step.emit()
         try:
@@ -212,14 +212,13 @@ class FdlFile(Logger,Qt.QObject):
                     self._anomalies.append(distance)
                     #Anomalies are discarded 
                     #(nothing to do with the set of signals.
-                
                 #FIXME:this is for debug, to be eliminated
+                #but it may be used to emit signals about 
+                #the progress of the process
                 if self._iterator.iterindex%1e6 == self._offset:
                     current = self._iterator.iterindex
                     total = float(self._iterator.itersize)
                     self._percentage = int((current/total)*100)
-                    #but it may be used to emit signals about 
-                    #the progress of the process
                     self.info("we are at %d%% (%d of %d)"
                               %(self._percentage,self._iterator.iterindex,
                                 self._iterator.itersize))
@@ -234,13 +233,19 @@ class FdlFile(Logger,Qt.QObject):
             else:
                 self.aborted.emit()
                 self.warning("Process aborted: %d%%"%(self._percentage))
-            self.info("Process has take %g seconds"%(time()-self._t0))
+            self.info("Process has take %g seconds"%(time.time()-self._t0))
             return True
         except Exception,e:
             self.error("file process cannot be completed! Exception: %s"%(e))
             traceback.print_exc()
             self.aborted.emit()
             return False
+        
+    def processSignalSet(self):
+        for keyName in self._signals.keys():
+            fieldName = SignalFields[keyName][field]
+            value = self._values[self._iterator.iterindex+LoopsFields[fieldName]]
+            self._signals[keyName].append(float(value)/32767*1000)
     #--- done processing area
     ####
     
@@ -251,17 +256,22 @@ class FdlFile(Logger,Qt.QObject):
         self._interrupt.set()
     
     def postprocess(self):
+        self.info("Start post-processing %d signals"%(len(self._signals.keys())))
+        #Convert the collected data to numpy.array
         for signal in self._signals.keys():
-            if SignalFields[signal].has_key('I') and \
-                                             SignalFields[signal].has_key('Q'):
-                self._signals[signal] = np.array(self._signals[signal])
-
-    def getSignal(self,key):
-        if not key in self._signals.keys():
-            raise Exception("Unknown signal")
-        if type(self._signals[key]) == list:
-            raise Exception("Data not yet available")
-        return copy(self._signals[key])
+            self._signals[signal] = np.array(self._signals[signal])
+            self.debug("Converted %s list to numpy array"%(signal))
+        #check the signal descriptors that have an amplitude conversion
+        for keyName in SignalFields.keys():
+            if self.hasIandQ(keyName):
+                Itag = SignalFields[keyName][I]
+                Isignal = self._signals[Itag]
+                Qtag = SignalFields[keyName][Q]
+                Qsignal = self._signals[Qtag]
+                self.info("Signal %s has I (%s) and Q (%s)"%(keyName,Itag,Qtag))
+                self._signals[keyName] = np.sqrt((Isignal**2)+(Qsignal**2))
+        self.debug("Post-processed signal set (%d): %s"
+                   %(len(self._signals.keys()),self._signals.keys()))
     #--- done postprocessing area
     ####
     
@@ -286,8 +296,6 @@ class FdlFile(Logger,Qt.QObject):
                       %(self._percentage,nAnomalies,rate))
             return rate
         return 0
-    def isProcessing(self):
-        return self._processThread.isAlive() and not self._percentage == 100
     #--- done auxiliar resources area
     ####
     
@@ -344,48 +352,11 @@ class LoopsFile(FdlFile):
         FdlFile.__init__(self,filename)
         self._name = 'Loops'
 
-    ####
-    #--- preparation area
-    def prepareSignalSet(self):
-        for keyName in SignalFields.keys():
-            if self.hasI(keyName) and self.hasQ(keyName):
-                self._signals[keyName] = []
-        self.debug("prepared the signal set: %s"%(self._signals.keys()))
-    def processSignalSet(self):
-        for keyName in self._signals.keys():
-            I_tag = SignalFields[keyName]['I']
-            I = self._values[self._iterator.iterindex+LoopsFields[I_tag]]
-            Q_tag = SignalFields[keyName]['Q']
-            Q = self._values[self._iterator.iterindex+LoopsFields[Q_tag]]
-            Ampl = (sqrt((I**2)+(Q**2)))/32767*1000
-            self._signals[keyName].append(Ampl)
-    #--- done preparation area
-    ####
-
 class DiagnosticsFile(FdlFile):
     def __init__(self,filename,loadErrorRate=LOAD_ERROR_RATE):
         self._fields = DiagFields
         FdlFile.__init__(self,filename,loadErrorRate)
         self._name = 'Diag'
-    def hasI(self,name):
-        return SignalFields[name].has_key('I') and \
-               SignalFields[name]['I'] in DiagFields.keys()
-    def hasQ(self,name):
-        return SignalFields[name].has_key('Q') and \
-               SignalFields[name]['Q'] in DiagFields.keys()
-    ####
-    #--- preparation area
-
-    def processSignalSet(self):
-        for keyName in self._signals.keys():
-            I_tag = SignalFields[keyName]['I']
-            I = self._values[self._iterator.iterindex+DiagFields[I_tag]]
-            Q_tag = SignalFields[keyName]['Q']
-            Q = self._values[self._iterator.iterindex+DiagFields[Q_tag]]
-            Ampl = (sqrt((I**2)+(Q**2)))/32767*1000
-            self._signals[keyName].append(Ampl)
-    #--- done preparation area
-    ####
 
 ####
 #---Test area
@@ -399,18 +370,33 @@ def plotter():
     f1 = figure()
     af1 = f1.add_subplot(111)
     for k in descriptor._signals.keys():
-        x = []
-        for i,e in enumerate(descriptor._signals[k]):
-            x.append(i)
-        af1.plot(descriptor._signals[k])
+        x = np.linspace(0,411,descriptor._signals[k].size)
+        af1.plot(x,descriptor._signals[k])
         xlabel('Time')
         ylabel(k)
+#    k = descriptor._signals.keys()[0]
+#    x = np.linspace(0,411,descriptor._signals[k].Amplitude.size)
+#    af1.plot(x,descriptor._signals[k].I)
+#    af1.plot(x,descriptor._signals[k].Q)
+#    af1.plot(x,descriptor._signals[k].Amplitude)
+    xlabel('Time')
+    ylabel(k)
     plt.title("Test")
+    plt.show()
+
+import json
+def write2file(dictionary):
+    fileName = ("%s_FdlFileParser.json"%(time.strftime("%Y%m%d_%H%M%S")))
+    for key in dictionary:
+        dictionary[key] = dictionary[key].tolist()
+    with open(fileName,'w') as f:
+        f.write(json.dumps(dictionary))
 
 if __name__ == "__main__":
     import sys,time
-    if len(sys.argv) != 2:
-        print("Give a path to a sample file as paramenter")
+    if len(sys.argv) < 2:
+        print("\nGive a path to a sample file as first parameter\n"\
+              "a second optional --file parameter will use json to drop data\n")
         sys.exit(-1)
     if sys.argv[1].split('/')[-1].startswith('Loops'):
         descriptor = LoopsFile(sys.argv[1])
@@ -419,12 +405,15 @@ if __name__ == "__main__":
     else:
         print("Unrecognized file")
         sys.exit(-2)
+    descriptor.setLogLevel(descriptor.Debug)
     descriptor.process()
-    while not descriptor.percentage == 100:
+    while descriptor.isProcessing():
         print("Main thread waiting file process (%d%%)"
               %(descriptor.percentage))
         descriptor.rate
         time.sleep(10)
     plotter()
+    if sys.argv[2] == '--file':
+        write2file(descriptor._signals)
     print("Well done! Test completed. Exiting...")
     sys.exit(0)

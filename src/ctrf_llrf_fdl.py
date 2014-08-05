@@ -82,10 +82,6 @@ class MainWindow(TaurusMainWindow):
         #Like the button add also the loadFile to the menu
         self.loadFileAction = Qt.QAction(getThemeIcon("document-open"),
                                          'Open Files...',self)
-        #try:#normal way
-        #    self.connect(self.loadFileAction, Qt.SIGNAL("triggered()"),
-        #                 self.loadFile)
-        #except:#backward compatibility to pyqt 4.4.3
         Qt.QObject.connect(self.loadFileAction, Qt.SIGNAL("triggered()"),
                            self.loadFile)
         self.fileMenu.addAction(self.loadFileAction)#TODO: sort this menu
@@ -175,19 +171,8 @@ class MainWindow(TaurusMainWindow):
         self.info("Load file clicked")
         if self._loader == None:
             self._loader = LoadFileDialog(self)
-            try:#normal way
-                self._loader.closeApp.connect(self.closeLoaderWidget)
-            except:#backward compatibility to pyqt 4.4.3
-                self.warning("Connecting closeApp in the old way")
-                Qt.QObject.connect(self._loader,
-                                   Qt.SIGNAL("closeApp"),
-                                   self.closeLoaderWidget)
-            try:#normal way
-                self._loader.selectionDone.connect(self.prepare)
-            except:#backward compatibility to pyqt 4.4.3
-                self.warning("Connecting selectionDone in the old way")
-                Qt.QObject.connect(self._loader,Qt.SIGNAL("selectionDone"),
-                                   self.prepare)
+            self.connectSignal(self._loader,'closeApp',self.closeLoaderWidget)
+            self.connectSignal(self._loader,'selectionDone',self.prepare)
         self._loader.show()
     def closeLoaderWidget(self):
         self.info("closeLoaderWidget()")
@@ -201,33 +186,13 @@ class MainWindow(TaurusMainWindow):
         self.prepareProgressBar()
         if len(selection['Loops']) > 0:
             self._loopsParser = LoopsFile(selection['Loops'])
-            try:#normal way
-                self._loopsParser.step.connect(self.updateProgressBar)
-            except:#backward compatibility to pyqt 4.4.3
-                Qt.QObject.connect(self._loopsParser,
-                                   Qt.SIGNAL('step'),
-                                   self.updateProgressBar)
-            try:#normal way
-                self._loopsParser.done.connect(self.endProgressBar)
-            except:#backward compatibility to pyqt 4.4.3
-                Qt.QObject.connect(self._loopsParser,
-                                   Qt.SIGNAL('done'),
-                                   self.endProgressBar)
+            self.connectSignal(self._loopsParser,'step',self.loadingStep)
+            self.connectSignal(self._loopsParser,'done',self.loadComplete)
             self._loopsParser.process()
         if len(selection['Diag']) > 0:
             self._diagParser = DiagnosticsFile(selection['Diag'])
-            try:#normal way
-                self._diagParser.step.connect(self.updateProgressBar)
-            except:#backward compatibility to pyqt 4.4.3
-                Qt.QObject.connect(self._diagParser,
-                                   Qt.SIGNAL('step'),
-                                   self.updateProgressBar)
-            try:#normal way
-                self._diagParser.done.connect(self.endProgressBar)
-            except:#backward compatibility to pyqt 4.4.3
-                Qt.QObject.connect(self._diagParser,
-                                   Qt.SIGNAL('done'),
-                                   self.endProgressBar)
+            self.connectSignal(self._diagParser,'step',self.loadingStep)
+            self.connectSignal(self._diagParser,'done',self.loadComplete)
             self._diagParser.process()
         #facade and plotting:
         self.facadeManagerBuilder(selection['facade'],selection['beamCurrent'])
@@ -236,6 +201,28 @@ class MainWindow(TaurusMainWindow):
         self.signalProcessorBuilder()
         self.plotManagerBuilder()
         self._loader = None
+    def connectSignal(self,obj,signalStr,callback):
+        try:
+            objStr = [ k for k,v in locals().iteritems() if v is obj][0]
+            try:#normal way
+                signal = getattr(obj,signalStr)
+                signal.connect(callback)
+                self.debug("Connected %s signal"%(signalStr))
+            except:#backward compatibility to pyqt 4.4.3
+                Qt.QObject.connect(obj,Qt.SIGNAL(signalStr),callback)
+                self.deprecated("Connected %s signal"%(signalStr))
+        except Exception,e:
+            self.error("Cannot proceed conntecting %s signal due to: %s"
+                       %(signalStr,e))
+    def loadingStep(self):
+        self.updateProgressBar()
+        
+    def loadComplete(self):
+        self.endProgressBar()
+        #TODO: report the anomalities rate in the statusBar
+        self.populateSignalProcessor()
+        self._postProcessor.process()
+        #FIXME: report the user if something wasn't possible to be calculated
     def cancel(self):
         if self._loopsParser != None:
             self._loopsParser.abort()
@@ -262,21 +249,28 @@ class MainWindow(TaurusMainWindow):
         self.debug("new progress bar value %g"%(value))
         self.ui.progressBar.setValue(int(value))
     def endProgressBar(self):
-        if (self._loopsParser == None or not self._loopsParser.isProcessing())\
-           and\
-           (self._diagParser == None  or not  self._diagParser.isProcessing()):
-            self._enableWidgets(True)
-            self.ui.progressBar.setValue(100)
-        #TODO: report the anomalities rate in the statusBar
-        #...
-        #postprocess
-        self._postProcessor.process()
-        #FIXME: report the user if something wasn't possible to be calculated
-        #plotting:
-        self._plotter.doPlots(force=True)
-        #FIXME: the action to plot should be a reaction to a signal emitted 
-        #       when both parsing processes finishes
+        if self.areParsersProcessing():
+            self.debug("One parser has finished, waiting the other")
+            self.updateProgressBar()
+            return
+        self.debug("No more parsers working, proceed to calculations")
+        self.ui.progressBar.setValue(100)
+        self._enableWidgets(True)
     #--- done progress bar tools
+    ####
+    
+    ####
+    #--- File loaders area
+    def areParsersProcessing(self):
+        loops = self.isLoopsProcessing() if self._loopsParser != None else True
+        diag = self.isDiagProcessing() if self._diagParser != None else True
+        return loops and diag
+    def isLoopsProcessing(self):
+        return self._loopsParser != None and self._loopsParser.isProcessing()
+    def isDiagProcessing(self):
+        return self._diagParser != None and self._diagParser.isProcessing()
+    
+    #--- done file loaders area
     ####
     
     ####
@@ -296,30 +290,37 @@ class MainWindow(TaurusMainWindow):
     ####
     #--- 
     def signalProcessorBuilder(self):
+        self.debug("Builder for the SignalProcessor")
+        self._postProcessor = SignalProcessor(self._facade)
+        self.connectSignal(self._facade,'updated', self.facadeHasUpdated)
+        #self.populateSignalProcessor()
+    def populateSignalProcessor(self):
         if self._loopsParser != None:
-            loopsSignals=self._loopsParser._signals
-        else:
-            loopsSignals=None
+            self._postProcessor.appendSignals(self._loopsParser._signals)
         if self._diagParser != None:
-            diagSignals=self._diagParser._signals
-        else:
-            diagSignals=None
-        self._postProcessor = SignalProcessor(self,loopsSignals,diagSignals)
+            self._postProcessor.appendSignals(self._diagParser._signals)
+    def facadeHasUpdated(self):
+        self.debug("Received update signal from facade and calling processor")
+        if not self.areParsersProcessing():
+            self._postProcessor.process()
     #---
     ####
 
     ####
     #--- plotting section
     def plotManagerBuilder(self):
-        if self._loopsParser != None:
-            loopsSignals=self._loopsParser._signals
-        else:
-            loopsSignals=None
-        if self._diagParser != None:
-            diagSignals=self._diagParser._signals
-        else:
-            diagSignals=None
-        self._plotter = Plotter(self,loopsSignals,diagSignals)
+        self.debug("Builder for the Plotter")
+        self._plotter = Plotter(self)
+        self.connectSignal(self._postProcessor,'change',
+                           self.processorHasChanged)
+        self.populatePlotter()
+    def populatePlotter(self):
+        self._plotter.appendSignals(self._postProcessor._signals)
+    def processorHasChanged(self):
+        self.debug("Received change signal from SignalProcessor "\
+                   "and calling plot")
+        self.populatePlotter()
+        self._plotter.doPlots(force=True)
     #--- done plotting section
     ####
 

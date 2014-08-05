@@ -35,8 +35,8 @@ try:#normal way
 except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt
 from taurus.qt.qtgui.plot import CurveAppearanceProperties
-from numpy import linspace
-from FdlSignals import SignalFields,y2
+from numpy import linspace,array
+from FdlSignals import *
 
 
 TOTAL_TIME = 411.00#ms
@@ -50,20 +50,25 @@ class Plotter(Logger):
         Logger.__init__(self)
         self._parent = parent
         self._processor = parent._postProcessor
-        self._loops = loopsSignals
-        self._diag = diagSignals
-        try:#normal way
-            self._processor.change.connect(self.forcePlot)
-        except:#backward compatibility to pyqt 4.4.3
-            Qt.QObject.connect(self._processor,
-                               Qt.SIGNAL('change'),
-                               self.forcePlot)
+        self._signals = {}
+        if loopsSignals!=None:
+            self.appendSignals(loopsSignals)
+        self._loops = loopsSignals#To be removed
+        if diagSignals!=None:
+            self.appendSignals(diagSignals)
+        self._diag = diagSignals#To be removed
+#        try:#normal way
+#            self._processor.change.connect(self._forcePlot)
+#        except:#backward compatibility to pyqt 4.4.3
+#            Qt.QObject.connect(self._processor,
+#                               Qt.SIGNAL('change'),
+#                               self._forcePlot)
         self._startDisplay = self.startDisplay
         self._endDisplay = self.endDisplay
         self._decimation = self.decimation
         Qt.QObject.connect(self._parent.ui.replotButton,
                            Qt.SIGNAL('clicked(bool)'),
-                           self.forcePlot)
+                           self._forcePlot)
         Qt.QObject.connect(self._parent.ui.timeAndDecimation._ui.startValue,
                            Qt.SIGNAL('editingFinished()'),
                            self.doPlots)
@@ -102,15 +107,28 @@ class Plotter(Logger):
         #Those locations must correspond with FdlFileParser.SignalFields
         #within each signal the key 'gui' must have a 'tab' and 'plot' keys
         #that indicates a widget on this dictionary
-        
-        
-#        #Remember to populate this with exactly the same keys than the parsed
-#        self.SignalPlots = {'CavityVolts':
-#                            {'plot':self._parent.ui.loops1Plots._ui.topLeft,
-#                             'curveProperties':CurveAppearanceProperties(
-#                                                      lColor=Qt.QColor('Blue'))
-#                            }
-#                           }
+    def appendSignals(self,dictionary):
+        if type(dictionary) == dict:
+            for key in dictionary.keys():
+                if self._isPlottableSignal(key):
+                    if key in self._signals.keys():
+                        self.warning("Append an existing %s signal overrides "\
+                                     "the content!"%(key))
+                    if type(dictionary[key]) == list:
+                        self._signals[key] = array(dictionary[key])
+                    else:
+                        self._signals[key] = dictionary[key]
+                    self.info("Appending %s signal"%(key))
+                else:
+                    self.warning("Excluding %s signal because doesn't have "\
+                                 "plotting information."%(key))
+            self.debug("Currently there are %s signals to plot"
+                       %(len(self._signals.keys())))
+        else:
+            raise TypeError("Unknown how append %s data type"%type(dictionary))
+    def _isPlottableSignal(self,name):
+        return SignalFields.has_key(name) and \
+               SignalFields[name].has_key(gui)
     @property
     def startDisplay(self):
         return self._parent.ui.timeAndDecimation._ui.startValue.value()
@@ -158,90 +176,119 @@ class Plotter(Logger):
                             self.endDisplayChange   or \
                             self.decimationChange
         if isNeeded:
-            self.forcePlot()
+            self._forcePlot()
         else:
             self.debug("ignore plotting because it hasn't change")
     
-    def forcePlot(self):
-        self.debug("starting plotting procedure")
-        if self._loops != None:
-            self.plotLoops()
-        if self._diag != None:
-            self.plotDiag()
+    def _forcePlot(self):
+        self.debug("starting plotting procedure: %s"%(self._signals.keys()))
+        for signalName in self._signals.keys():
+            self.debug("Signal %s will be plotted"%(signalName))
+            self._plotSignal(signalName)
+            
+    def _plotSignal(self,signalName):
+        #TODO: sampling rate is different for Loops than diad
+        try:
+            y = self._signals[signalName]
+            pointTime = TOTAL_TIME/y.size
+            startPoint = int(self._startDisplay/pointTime)
+            endPoint = int(self._endDisplay/pointTime)
+            #apply the time&decimation
+            y = y[startPoint:endPoint:self._decimation]
+            x = linspace(self._startDisplay,self._endDisplay,y.size)
+            #TaurusPlot structure
+            signal = {'title':signalName,'x':x,'y':y}
+            #locate in the possible TaurusPlots
+            destinationTab = SignalFields[signalName][gui][tab]
+            destinationPlot = SignalFields[signalName][gui][plot]
+            plotColor = SignalFields[signalName][gui][color]
+            destinationAxis =  SignalFields[signalName][gui][axis]
+            curveProp = CurveAppearanceProperties(lColor=Qt.QColor(plotColor),
+                                                  yAxis=destinationAxis)
+            self._widgetsMap[destinationTab][destinationPlot].\
+                                                attachRawData(signal,curveProp)
+            if destinationAxis == y2:
+                self._widgetsMap[destinationTab][destinationPlot].\
+                                                                autoShowYAxes()
+        except Exception,e:
+            self.error("Exception trying to plot %s: %s"%(signalName,e))
     
-    def plotLoops(self):
-        self.debug("preparing to plot 'Loops': %s"%(self._loops.keys()))
-        for signalName in self._loops.keys():
-            if type(self._loops[signalName]) == list:
-                self.warning("Signal %s not ready to be plotted"%(signalName))
-            elif not SignalFields[signalName].has_key('gui'):
-                self.debug("Signal %s is not configured to be plotted."
-                           %(signalName))
-            else:
-                self.debug("Signal %s will be plotted"%(signalName))
-                try:
-                    #cut the incomming signal by the [start:end] delimiters
-                    pointTime = TOTAL_TIME/self._loops[signalName].size
-                    self.debug("Each sample point means %g ms (%d points)"
-                              %(pointTime,self._loops[signalName].size))
-                    startPoint = int(self._startDisplay/pointTime)
-                    self.debug("With a start display at %g ms, "\
-                              "point %d the first displayed"
-                              %(self._startDisplay,startPoint))
-                    endPoint = int(self._endDisplay/pointTime)
-                    self.debug("With a end display at %g ms, "\
-                              "point %d the last displayed"
-                              %(self._endDisplay,endPoint))
-                    y = self._loops[signalName]\
-                                         [startPoint:endPoint:self._decimation]
-                    x = linspace(self._startDisplay,self._endDisplay,y.size)
-                    signal = {'title':signalName,'x':x,'y':y}
-                    tab = SignalFields[signalName]['gui']['tab']
-                    plot = SignalFields[signalName]['gui']['plot']
-                    color = SignalFields[signalName]['gui']['color']
-                    axis =  SignalFields[signalName]['gui']['axis']
-                    curveProp = CurveAppearanceProperties(\
-                                                       lColor=Qt.QColor(color),
-                                                                    yAxis=axis)
-                    self._widgetsMap[tab][plot].attachRawData(signal,curveProp)
-                    if axis == y2:
-                        self._widgetsMap[tab][plot].autoShowYAxes()
-                except Exception,e:
-                    self.error("Exception plotting %s: %s"%(signalName,e))
-    def plotDiag(self):
-        self.debug("preparing to plot 'Diag': %s"%(self._diag.keys()))
-        for signalName in self._diag.keys():
-            if type(self._diag[signalName]) == list:
-                self.warning("Signal %s not ready to be plotted"%(signalName))
-            elif not SignalFields[signalName].has_key('gui'):
-                self.debug("Signal %s is not configured to be plotted."
-                           %(signalName))
-            else:
-                self.debug("Signal %s will be plotted"%(signalName))
-                try:
-                    #cut the incomming signal by the [start:end] delimiters
-                    pointTime = TOTAL_TIME/self._diag[signalName].size
-                    self.debug("Each sample point means %g ms (%d points)"
-                              %(pointTime,self._diag[signalName].size))
-                    startPoint = int(self._startDisplay/pointTime)
-                    self.debug("With a start display at %g ms, "\
-                              "point %d the first displayed"
-                              %(self._startDisplay,startPoint))
-                    endPoint = int(self._endDisplay/pointTime)
-                    self.debug("With a end display at %g ms, "\
-                              "point %d the last displayed"
-                              %(self._endDisplay,endPoint))
-                    y = self._diag[signalName]\
-                                         [startPoint:endPoint:self._decimation]
-                    x = np.linspace(self._startDisplay,self._endDisplay,y.size)
-                    signal = {'title':signalName,'x':x,'y':y}
-                    tab = SignalFields[signalName]['gui']['tab']
-                    plot = SignalFields[signalName]['gui']['plot']
-                    color = SignalFields[signalName]['gui']['color']
-                    axis =  SignalFields[signalName]['gui']['axis']
-                    curveProp = CurveAppearanceProperties(\
-                                                       lColor=Qt.QColor(color),
-                                                                    yAxis=axis)
-                    self._widgetsMap[tab][plot].attachRawData(signal,curveProp)
-                except Exception,e:
-                    self.error("Exception plotting %s: %s"%(signalName,e))
+#    def plotLoops(self):
+#        self.debug("preparing to plot 'Loops': %s"%(self._loops.keys()))
+#        for signalName in self._loops.keys():
+#            if type(self._loops[signalName]) == list:
+#                self.warning("Signal %s not ready to be plotted"%(signalName))
+#            elif not SignalFields[signalName].has_key('gui'):
+#                self.debug("Signal %s is not configured to be plotted."
+#                           %(signalName))
+#            else:
+#                self.debug("Signal %s will be plotted"%(signalName))
+#                try:
+#                    if type(self._loops[signalName]) == SignalFromFile:
+#                        y = self._loops[signalName]
+#                    else:
+#                        y = self._loops[signalName]
+#                    #cut the incomming signal by the [start:end] delimiters
+#                    pointTime = TOTAL_TIME/y.size
+#                    self.debug("Each sample point means %g ms (%d points)"
+#                              %(pointTime,y.size))
+#                    startPoint = int(self._startDisplay/pointTime)
+#                    self.debug("With a start display at %g ms, "\
+#                              "point %d the first displayed"
+#                              %(self._startDisplay,startPoint))
+#                    endPoint = int(self._endDisplay/pointTime)
+#                    self.debug("With a end display at %g ms, "\
+#                              "point %d the last displayed"
+#                              %(self._endDisplay,endPoint))
+#                    y = y[startPoint:endPoint:self._decimation]
+#                    x = linspace(self._startDisplay,self._endDisplay,y.size)
+#                    signal = {'title':signalName,'x':x,'y':y}
+#                    tab = SignalFields[signalName][gui][tab]
+#                    plot = SignalFields[signalName][gui][plot]
+#                    color = SignalFields[signalName][gui][color]
+#                    axis =  SignalFields[signalName][gui][axis]
+#                    curveProp = CurveAppearanceProperties(\
+#                                                       lColor=Qt.QColor(color),
+#                                                                    yAxis=axis)
+#                    self._widgetsMap[tab][plot].attachRawData(signal,curveProp)
+#                    if axis == y2:
+#                        self._widgetsMap[tab][plot].autoShowYAxes()
+#                except Exception,e:
+#                    self.error("Exception plotting %s: %s"%(signalName,e))
+#    def plotDiag(self):
+#        self.debug("preparing to plot 'Diag': %s"%(self._diag.keys()))
+#        for signalName in self._diag.keys():
+#            if type(self._diag[signalName]) == list:
+#                self.warning("Signal %s not ready to be plotted"%(signalName))
+#            elif not SignalFields[signalName].has_key('gui'):
+#                self.debug("Signal %s is not configured to be plotted."
+#                           %(signalName))
+#            else:
+#                self.debug("Signal %s will be plotted"%(signalName))
+#                try:
+#                    #cut the incomming signal by the [start:end] delimiters
+#                    pointTime = TOTAL_TIME/self._diag[signalName].size
+#                    self.debug("Each sample point means %g ms (%d points)"
+#                              %(pointTime,self._diag[signalName].size))
+#                    startPoint = int(self._startDisplay/pointTime)
+#                    self.debug("With a start display at %g ms, "\
+#                              "point %d the first displayed"
+#                              %(self._startDisplay,startPoint))
+#                    endPoint = int(self._endDisplay/pointTime)
+#                    self.debug("With a end display at %g ms, "\
+#                              "point %d the last displayed"
+#                              %(self._endDisplay,endPoint))
+#                    y = self._diag[signalName]\
+#                                         [startPoint:endPoint:self._decimation]
+#                    x = np.linspace(self._startDisplay,self._endDisplay,y.size)
+#                    signal = {'title':signalName,'x':x,'y':y}
+#                    tab = SignalFields[signalName][gui][tab]
+#                    plot = SignalFields[signalName][gui][plot]
+#                    color = SignalFields[signalName][gui][color]
+#                    axis =  SignalFields[signalName][gui][axis]
+#                    curveProp = CurveAppearanceProperties(\
+#                                                       lColor=Qt.QColor(color),
+#                                                                    yAxis=axis)
+#                    self._widgetsMap[tab][plot].attachRawData(signal,curveProp)
+#                except Exception,e:
+#                    self.error("Exception plotting %s: %s"%(signalName,e))

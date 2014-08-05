@@ -61,15 +61,15 @@ except:#backward compatibility to pyqt 4.4.3
 
 ####
 #--- Dictionary keywords:
-#pure file signal description fields
+#pure file signal description fields and their amplitude components
+field='field'
 I = 'I'
 Q = 'Q'
 #signals with linear of quadratic fits using facade's attrs
 vble = 'x'
 slope = 'm'
-loffset = 'n'
+offset = 'n'
 couple = 'c'
-qoffset = 'o'
 #formula evaluation signals
 formula = 'f'
 handler = 'h'
@@ -80,50 +80,110 @@ tab = 'tab'
 plot = 'plot'
 axis = 'axis'
 color='color'
+#allowed strings: 'Black','Red','Blue','Magenta','Green','Cyan','Yellow'
 y1 = Qwt5.QwtPlot.Axis(0)
 y2 = Qwt5.QwtPlot.Axis(1)
 #--- done dictionary keywords
 ####
 
 SignalFields = {#Loops signals
-                'CavVolt':       {I:'Cav_I',      Q:'Cav_Q'  },
-                'FwCav_mV':      {I:'FwCav_I',    Q:'FwCav_Q'},
-                'RvCav_mV':      {I:'RvCav_I',    Q:'RvCav_Q'},
+                'CavVolt_I':    {field:'Cav_I'},
+                'CavVolt_Q':    {field:'Cav_Q'},
+                'FwCav_I':      {field:'FwCav_I'},
+                'FwCav_Q':      {field:'FwCav_Q'},
+                'RvCav_I':      {field:'RvCav_I'},
+                'RvCav_Q':      {field:'RvCav_Q'},
+                'Control_I':    {field:'Control_I',
+                                 gui:{tab:  'Loops1',
+                                      plot: 'middleLeft',
+                                      axis: y1,
+                                      color:'Blue'}},
+                'Control_Q':    {field:'Control_Q',
+                                 gui:{tab:  'Loops1',
+                                      plot: 'middleLeft',
+                                      axis: y2,
+                                      color:'Cyan'}},
+                'Error_I':      {field:'Error_I',
+                                 gui:{tab:  'Loops1',
+                                      plot: 'middleRight',
+                                      axis: y1,
+                                      color:'Green'}},
+                'Error_Q':      {field:'Error_Q',
+                                 gui:{tab:  'Loops1',
+                                      plot: 'middleRight',
+                                      axis: y1,
+                                      color:'Blue'}},
+                'ErroAccum_I':  {field:'ErroAccum_I',
+                                 gui:{tab:  'Loops1',
+                                      plot: 'middleRight',
+                                      axis: y2,
+                                      color:'Yellow'}},
+                'ErroAccum_Q':  {field:'ErroAccum_Q',
+                                 gui:{tab:  'Loops1',
+                                      plot: 'middleRight',
+                                      axis: y2,
+                                      color:'Cyan'}},
                 #Diag signals
-                'SSA1Input':     {I:'SSA1Input_I',Q:'SSA1Input_Q',
-                                  gui:    {tab:'Diag',
-                                           plot:'topLeft',
-                                           axis:y1,
-                                           color:'Black'}},
+                'SSA1Input_I':  {field:'SSA1Input_I'},
+                'SSA1Input_Q':  {field:'SSA1Input_Q'},
+                #Loops Amplitudes
+                'CavVolt':      {I:'CavVolt_I',  Q:'CavVolt_Q'},
+                'FwCav':        {I:'FwCav_I',    Q:'FwCav_Q'},
+                'RvCav':        {I:'RvCav_I',    Q:'RvCav_Q'},
+                'Control':      {I:'Control_I',  Q:'Control_Q'},
+                'Error':        {I:'Error_I',    Q:'Error_Q',
+                                 gui:{tab:  'Loops1',
+                                      plot: 'middleRight',
+                                      axis: y1,
+                                      color:'Red'}},
+                'ErroAccum':    {I:'ErroAccum_I',Q:'ErroAccum_Q',
+                                 gui:{tab:  'Loops1',
+                                      plot: 'middleRight',
+                                      axis: y2,
+                                      color:'Magenta'}},
+                #Diag Amplitudes
+                'SSA1Input':     {I:'SSA1Input_I',Q:'SSA1Input_Q'},
                 #fitted signals
                 'CavVolt_mV':    {vble:   'CavVolt',
                                   slope:  'CavVolt_m',
-                                  loffset:  'CavVolt_n'},
-                'CavVolt_kV':    {vble:   'CavVolt',
+                                  offset:  'CavVolt_n'},
+                'CavVolt_kV':    {vble:   'CavVolt_mV',
                                   slope:  'CAV_VOLT_KV_m',
-                                  loffset:'CAV_VOLT_KV_n',
+                                  offset:'CAV_VOLT_KV_n',
                                   gui:    {tab:'Loops1',
                                            plot:'topLeft',
                                            axis:y1,
                                            color:'Red'}},
-                'FwCav_kW':      {vble:   'FwCav_mV',
+                'FwCav_kW':      {vble:   'FwCav',
                                   couple: 'FwCav_kW_couple',
-                                  qoffset:'FwCav_kW_offset'},
-                'RvCav_kW':      {vble:   'RvCav_mV',
+                                  offset:'FwCav_kW_offset',
+                                  gui:    {tab:'Loops1',
+                                           plot:'bottomLeft',
+                                           axis:y1,
+                                           color:'Blue'}},
+                'RvCav_kW':      {vble:   'RvCav',
                                   couple: 'RvCav_kW_couple',
-                                  qoffset:'RvCav_kW_offset',},
+                                  offset:'RvCav_kW_offset',
+                                  gui:    {tab:'Loops1',
+                                           plot:'topRight',
+                                           axis:y1,
+                                           color:'Green'}},
                 #formula signals
                 'PDisCav_kW':    {formula:'(CavVolt_kV**2)/(10e6*2*3.3e8)',
                                   handler:'loops',
                                   depend: ['CavVolt_kV'],
-                                  #vble:   'CavVolt_mV',
-                                  #couple: 'PDisCav_c',
-                                  #qoffset:'PDisCav_o',
-                                  },
+                                  gui:    {tab:'Loops1',
+                                           plot:'topRight',
+                                           axis:y2,
+                                           color:'Red'}},
                 'PBeam_kW':      {formula:'FwCav_kW-RvCav_kW-PDisCav_kW',
                                   handler:'loops',
                                   depend: ['FwCav_kW','RvCav_kW',
-                                           'PDisCav_kW']},
+                                           'PDisCav_kW'],
+                                  gui:    {tab:'Loops1',
+                                           plot:'topRight',
+                                           axis:y1,
+                                           color:'Blue'}},
                 'BeamPhase':     {formula:\
                      '180-arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV)*180/pi',
                                   handler:'loops',
@@ -131,7 +191,8 @@ SignalFields = {#Loops signals
                                   gui:    {tab:'Loops1',
                                            plot:'topLeft',
                                            axis:y2,
-                                           color:'Cyan'}}
+                                           color:'Cyan'}},
+#                #'FwCav_Phase':   {formula:'arctan'}
                }
 
 #Correspondence of signals structure. 
@@ -148,7 +209,7 @@ LoopsFields = {'separator':     0,'FwCavPhase':    1,#0
                'Cav_I':        18,'Cav_Q':        19,#9
                'Control_I':    20,'Control_Q':    21,#10
                'Error_I':      22,'Error_Q':      23,#11
-               'ErroAccum_I':  24,'ErrorAccum_Q': 25,#12
+               'ErroAccum_I':  24,'ErroAccum_Q':  25,#12
                'FwCav_I':      26,'FwCav_Q':      27,#13
                'TuningDephase':28,'CavityPhase':  29,#14
                'Reference_I':  30,'Reference_Q':  31}#15
