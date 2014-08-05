@@ -125,6 +125,40 @@ SignalFields = {#Loops signals
                 'Dephase':      {field:'TuningDephase'},
                 'CavPhase':     {field:'CavityPhase'},
                 'FwCavPhase':   {field:'FwCavPhase'},
+                'FwIOT1_I':     {field:'FwIOT1_I',
+                                 gui:{tab:'Loops2',
+                                      plot:'topLeft',
+                                      axis:y1,
+                                      color:'Red'}},
+                'FwIOT1_Q':     {field:'FwIOT1_Q',
+                                 gui:{tab:'Loops2',
+                                      plot:'topLeft',
+                                      axis:y1,
+                                      color:'Blue'}},
+                'FwIOT2_I':     {field:'FwIOT2_I',
+                                 gui:{tab:'Loops2',
+                                      plot:'topRight',
+                                      axis:y1,
+                                      color:'Red'}},
+                'FwIOT2_Q':     {field:'FwIOT2_Q',
+                                 gui:{tab:'Loops2',
+                                      plot:'topRight',
+                                      axis:y1,
+                                      color:'Blue'}},
+                'RvCircIn_I':   {field:'RvCircIn_I',
+                                 gui:{tab:'Loops2',
+                                      plot:'middleLeft',
+                                      axis:y1,
+                                      color:'Red'}},
+                'RvCircIn_Q':   {field:'RvCircIn_Q',
+                                 gui:{tab:'Loops2',
+                                      plot:'middleLeft',
+                                      axis:y1,
+                                      color:'Blue'}},
+                'FwLoad_I':     {field:'FwLoad_I'},
+                'FwLoad_Q':     {field:'FwLoad_Q'},
+                'MO_I':         {field:'MO_I'},
+                'MO_Q':         {field:'MO_Q'},
                 #Diag signals
                 'SSA1Input_I':  {field:'SSA1Input_I'},
                 'SSA1Input_Q':  {field:'SSA1Input_Q'},
@@ -143,6 +177,27 @@ SignalFields = {#Loops signals
                                       plot: 'middleRight',
                                       axis: y2,
                                       color:'Magenta'}},
+                'FwIOT1':       {I:'FwIOT1_I',Q:'FwIOT1_Q',
+                                 gui:{tab:'Loops2',
+                                      plot:'topLeft',
+                                      axis:y1,
+                                      color:'Black'}},
+                'FwIOT2':       {I:'FwIOT2_I',Q:'FwIOT2_Q',
+                                 gui:{tab:'Loops2',
+                                      plot:'topRight',
+                                      axis:y1,
+                                      color:'Black'}},
+                'RvCircIn':     {I:'RvCircIn_I',Q:'RvCircIn_Q',
+                                 gui:{tab:'Loops2',
+                                      plot:'middleLeft',
+                                      axis:y1,
+                                      color:'Black'}},
+                'FwLoad':       {I:'FwLoad_I',Q:'FwLoad_Q'},
+                'MO':           {I:'MO_I',Q:'MO_Q',
+                                 gui:{tab:'Loops2',
+                                      plot:'bottomRight',
+                                      axis:y1,
+                                      color:'Blue'}},
                 #Diag Amplitudes
                 'SSA1Input':     {I:'SSA1Input_I',Q:'SSA1Input_Q'},
                 #fitted signals
@@ -177,6 +232,13 @@ SignalFields = {#Loops signals
                                            plot:'topRight',
                                            axis:y2,
                                            color:'Red'}},
+                'FwLoad_kW':     {formula:
+                                       '(FwLoad**2)/(1e8*10**-3.70092)+0.1667',
+                                  depend: ['FwLoad'],
+                                  gui:    {tab:'Loops2',
+                                           plot:'middleRight',
+                                           axis:y1,
+                                           color:'Blue'}},
                 'PBeam_kW':      {formula:'FwCav_kW-RvCav_kW-PDisCav_kW',
                                   depend: ['FwCav_kW','RvCav_kW',
                                            'PDisCav_kW'],
@@ -192,31 +254,66 @@ SignalFields = {#Loops signals
                                            axis:y2,
                                            color:'Cyan'}},
                 'FwCav_Phase':   {formula:'arctan(FwCav_Q/FwCav_I)*180/pi+180',
-                         #arctan(Q/I)*180/pi+180 if I>0 else arctan(Q/I)*180/pi
-                         #FIXME: there is an IF statement here
+                                          #arctan(Q/I)*180/pi+180 
+                                          #if I>0 else 
+                                          #arctan(Q/I)*180/pi
+                                          #FIXME: there is an IF statement here
                                   depend: ['FwCav_Q','FwCav_I'],
                                   gui:    {tab:'Loops1',
                                            plot:'bottomLeft',
                                            axis:y2,
                                            color:'Cyan'}},
                 'Tuning_Dephase':{formula:'Dephase-1024/512*360',
+                                          #Dephase-1024/512*360 
+                                          #if Dephase > 512 else 
+                                          #Dephase/512*360
+                                          #FIXME: there is an IF statement here
                                   depend: ['Dephase'],
                                   gui:    {tab:'Loops1',
                                            plot:'bottomRight',
                                            axis:y1,
                                            color:'Red'}},
                 'Tuning_CavPhase':{formula:'CavPhase-1024/512*360',
+                                          #CavPhase-1024/512*360 
+                                          #if CavPhase > 512 else 
+                                          #CavPhase/512*360
+                                          #FIXME: there is an IF statement here
                                   depend: ['CavPhase'],
                                   gui:    {tab:'Loops1',
                                            plot:'bottomRight',
                                            axis:y1,
                                            color:'Blue'}},
                 'Tuning_FwCavPhase':{formula:'FwCavPhase-1024/512*360',
+                                          #FwCavPhase-1024/512*360 
+                                          #if FwCavPhase > 512 else 
+                                          #FwCavPhase/512*360
+                                          #FIXME: there is an IF statement here
                                   depend: ['FwCavPhase'],
                                   gui:    {tab:'Loops1',
                                            plot:'bottomRight',
                                            axis:y1,
                                            color:'Green'}},
+                'FwLoad_Phase':  {formula:
+                                        'arctan(FwLoad_Q/FwLoad_I)*180/pi+180',
+                                          #arctan(FwLoad_Q/FwLoad_I*180/pi+180 
+                                          #if FwLoad_I < 0 else 
+                                          #arctan(FwLoad_Q/FwLoad_I*180/pi
+                                          #FIXME: there is an IF statement here
+                                  depend: ['FwLoad_Q','FwLoad_I'],
+                                  gui:    {tab:'Loops2',
+                                           plot:'middleRight',
+                                           axis:y1,
+                                           color:'Cyan'}},
+                'MO_Phase':      {formula:'arctan(MO_Q/MO_I)*180/pi+180',
+                                          #arctan(Q/I)*180/pi+180 
+                                          #if I<0 else 
+                                          #arctan(Q/I)*180/pi
+                                          #FIXME: there is an IF statement here
+                                  depend: ['MO_Q','MO_I'],
+                                  gui:    {tab:'Loops2',
+                                           plot:'bottomRight',
+                                           axis:y1,
+                                           color:'Cyan'}},
                }
 
 #Correspondence of signals structure. 

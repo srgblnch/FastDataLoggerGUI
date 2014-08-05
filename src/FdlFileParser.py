@@ -146,7 +146,8 @@ class FdlFile(Logger,Qt.QObject):
            dictionary and it's also present in the fields for this type of 
            FDL file (Loops|Diag).
         '''
-        return SignalFields[name].has_key(field) and \
+        return SignalFields.has_key(name) and \
+               SignalFields[name].has_key(field) and \
                SignalFields[name][field] in self._fields.keys()
 
     def hasIandQ(self,name):
