@@ -37,20 +37,20 @@
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QGroupBox" name="PDIsCav">
+        <widget class="QGroupBox" name="cavityVolts_kV">
          <property name="title">
-          <string>PDisCav</string>
+          <string>Cavity Volts [kV]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_5">
           <item row="1" column="4">
-           <widget class="QLabel" name="PDIsCavOLabel">
+           <widget class="QLabel" name="cavityVolts_kV_NLabel">
             <property name="text">
              <string>offset</string>
             </property>
            </widget>
           </item>
           <item row="1" column="6">
-           <spacer name="PDIsCavRightSpacer">
+           <spacer name="cavityVolts_kV_RightSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -63,14 +63,14 @@
            </spacer>
           </item>
           <item row="1" column="1">
-           <widget class="QLabel" name="PDIsCavCLabel">
+           <widget class="QLabel" name="cavityVolts_kV_MLabel">
             <property name="text">
-             <string>couple</string>
+             <string>slope</string>
             </property>
            </widget>
           </item>
           <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="PDIsCavCValue">
+           <widget class="QDoubleSpinBox" name="cavityVolts_kV_MValue">
             <property name="decimals">
              <number>4</number>
             </property>
@@ -80,7 +80,7 @@
            </widget>
           </item>
           <item row="1" column="5">
-           <widget class="QDoubleSpinBox" name="PDIsCavOValue">
+           <widget class="QDoubleSpinBox" name="cavityVolts_kV_NValue">
             <property name="decimals">
              <number>4</number>
             </property>
@@ -90,7 +90,7 @@
            </widget>
           </item>
           <item row="1" column="0">
-           <spacer name="PDIsCavLeftSpacer">
+           <spacer name="cavityVolts_kV_LeftSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -103,7 +103,7 @@
            </spacer>
           </item>
           <item row="1" column="3">
-           <spacer name="PDIsCavCentralSpacer">
+           <spacer name="cavityVolts_kV_CentralSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -116,9 +116,9 @@
            </spacer>
           </item>
           <item row="0" column="1" colspan="5">
-           <widget class="QLabel" name="PDIsCavFormula">
+           <widget class="QLabel" name="cavityVolts_kV_Formula">
             <property name="text">
-             <string>y = x^2/10e8/10^c-o</string>
+             <string>y = (x-n)/m</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -221,13 +221,13 @@
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QGroupBox" name="cavityVolts">
+        <widget class="QGroupBox" name="cavityVolts_mV">
          <property name="title">
-          <string>Cavity Volts</string>
+          <string>Cavity Volts [mV]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
           <item row="1" column="6">
-           <spacer name="cavityVoltsRightSpacer">
+           <spacer name="cavityVolts_mV_RightSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -240,7 +240,7 @@
            </spacer>
           </item>
           <item row="1" column="3">
-           <spacer name="cavityVoltsCentralSpacer">
+           <spacer name="cavityVolts_mV_CentralSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -253,7 +253,7 @@
            </spacer>
           </item>
           <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="cavityVoltsMValue">
+           <widget class="QDoubleSpinBox" name="cavityVolts_mV_MValue">
             <property name="decimals">
              <number>4</number>
             </property>
@@ -263,7 +263,7 @@
            </widget>
           </item>
           <item row="1" column="5">
-           <widget class="QDoubleSpinBox" name="cavityVoltsNValue">
+           <widget class="QDoubleSpinBox" name="cavityVolts_mV_NValue">
             <property name="decimals">
              <number>4</number>
             </property>
@@ -273,21 +273,21 @@
            </widget>
           </item>
           <item row="1" column="4">
-           <widget class="QLabel" name="cavityVoltsNLabel">
+           <widget class="QLabel" name="cavityVolts_mV_NLabel">
             <property name="text">
              <string>offset</string>
             </property>
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QLabel" name="cavityVoltsMLabel">
+           <widget class="QLabel" name="cavityVolts_mV_MLabel">
             <property name="text">
              <string>slope</string>
             </property>
            </widget>
           </item>
           <item row="1" column="0">
-           <spacer name="cavityVoltsLeftSpacer">
+           <spacer name="cavityVolts_mV_LeftSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -300,7 +300,7 @@
            </spacer>
           </item>
           <item row="0" column="1" colspan="5">
-           <widget class="QLabel" name="cavityVoltsFormula">
+           <widget class="QLabel" name="cavityVolts_mV_Formula">
             <property name="text">
              <string>y = (x-n)/m</string>
             </property>
@@ -419,8 +419,8 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>cavityVoltsMValue</tabstop>
-  <tabstop>cavityVoltsNValue</tabstop>
+  <tabstop>cavityVolts_mV_MValue</tabstop>
+  <tabstop>cavityVolts_mV_NValue</tabstop>
   <tabstop>buttonBox</tabstop>
  </tabstops>
  <resources/>
