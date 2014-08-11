@@ -107,7 +107,7 @@ class MainWindow(TaurusMainWindow):
         self.ui.timeAndDecimation._ui.decimationValue.setMaximum(1000)
         self.ui.timeAndDecimation._ui.decimationValue.setValue(1)
         #progress bar initial value
-        self.ui.progressBar.setValue(100)
+        self.updateProgressBar(100)
     
     def _enableWidgets(self,enable):
         #buttons
@@ -119,7 +119,7 @@ class MainWindow(TaurusMainWindow):
         #self.ui.cancelButton.setEnabled(not enable)
         self.ui.replotButton.setEnabled(enable)
         #progressBar
-        self.ui.progressBar.setEnabled(not enable)
+        self.enableProgressBar(not enable)
         #configuration integers
         #self.ui.timeAndDecimation._ui.startValue.setEnabled(enable)
         #self.ui.timeAndDecimation._ui.endValue.setEnabled(enable)
@@ -179,6 +179,8 @@ class MainWindow(TaurusMainWindow):
         self._loader.hide()
         self._loader = None
     def prepare(self):
+        if hasattr(self,'_plotter') and self._plotter != None:
+            self._plotter.cleanAllPlots()
         selection = self._loader.getSelection()
         self.info("prepare(): %s"%(str(selection)))
         self._loader.hide()
@@ -234,18 +236,21 @@ class MainWindow(TaurusMainWindow):
     
     ####
     #--- progress bar tools
+    def enableProgressBar(self,enable):
+        self.ui.progressBar.setEnabled(enable)
     def prepareProgressBar(self):
         self._enableWidgets(False)
         self.ui.progressBar.setValue(0)
-    def updateProgressBar(self):
-        value = 0
-        if self._loopsParser != None:
-            value = self._loopsParser.percentage
-        if self._diagParser != None:
-            if value != 0:
-                value = (value+self._diagParser.percentage)/2
-            else:
-                value = self._diagParser.percentage
+    def updateProgressBar(self,value=None):
+        if value == None:
+            value = 0
+            if self._loopsParser != None:
+                value = self._loopsParser.percentage
+            if self._diagParser != None:
+                if value != 0:
+                    value = (value+self._diagParser.percentage)/2
+                else:
+                    value = self._diagParser.percentage
         self.debug("new progress bar value %g"%(value))
         self.ui.progressBar.setValue(int(value))
     def endProgressBar(self):
@@ -293,7 +298,8 @@ class MainWindow(TaurusMainWindow):
         self.debug("Builder for the SignalProcessor")
         self._postProcessor = SignalProcessor(self._facade)
         self.connectSignal(self._facade,'updated', self.facadeHasUpdated)
-        #self.populateSignalProcessor()
+        self.connectSignal(self._postProcessor,'oneProcessed',
+                           self.oneSignalProcessed)
     def populateSignalProcessor(self):
         if self._loopsParser != None:
             self._postProcessor.appendSignals(self._loopsParser._signals)
@@ -302,7 +308,12 @@ class MainWindow(TaurusMainWindow):
     def facadeHasUpdated(self):
         self.debug("Received update signal from facade and calling processor")
         if not self.areParsersProcessing():
+            self.enableProgressBar(True)
             self._postProcessor.process()
+    def oneSignalProcessed(self):
+        self.debug("Received from SignalProcessor that one signal more has"\
+                   "been processed. Update progress bar.")
+        self.updateProgressBar(self._postProcessor.processPercentage)
     #---
     ####
 
@@ -311,14 +322,17 @@ class MainWindow(TaurusMainWindow):
     def plotManagerBuilder(self):
         self.debug("Builder for the Plotter")
         self._plotter = Plotter(self)
-        self.connectSignal(self._postProcessor,'change',
-                           self.processorHasChanged)
+        self.connectSignal(self._postProcessor,'allProcessed',
+                           self.allSignalsProcessed)
         self.populatePlotter()
     def populatePlotter(self):
+        self._plotter.cleanSignals()
         self._plotter.appendSignals(self._postProcessor._signals)
-    def processorHasChanged(self):
-        self.debug("Received change signal from SignalProcessor "\
-                   "and calling plot")
+    def allSignalsProcessed(self):
+        self.debug("Received from SignalProcessor that all signals has been "\
+                   "processed. Report to the Plotter")
+        self.updateProgressBar(100)
+        self.enableProgressBar(False)
         self.populatePlotter()
         self._plotter.doPlots(force=True)
     #--- done plotting section

@@ -47,22 +47,27 @@ import traceback
 
 class SignalProcessor(Logger,Qt.QObject):
     try:#normal way
-        change = QtCore.pyqtSignal()
+        oneProcessed = QtCore.pyqtSignal()
+        allProcessed = QtCore.pyqtSignal()
     except:#backward compatibility to pyqt 4.4.3
-        change = MyQtSignal('change')
+        allProcessed = MyQtSignal('allProcessed')
+        oneProcessed = MyQtSignal('oneProcessed')
     def __init__(self,facade=None,loopsSignals=None,diagSignals=None):
         Logger.__init__(self)
         try:#normal way
             Qt.QObject.__init__(self, parent=None)
         except:#backward compatibility to pyqt 4.4.3
             Qt.QObject.__init__(self)
-            self.change._parent = self
+            self.allProcessed._parent = self
+            self.oneProcessed._parent = self
         self.setFacade(facade)
         self._signals = {}
         if loopsSignals!=None:
             self.appendSignals(loopsSignals)
         if diagSignals!=None:
             self.appendSignals(diagSignals)
+        self._signalsCalculated = 0
+        self._signals2Calculate = 0
     def appendSignals(self,dictionary):
         if type(dictionary) == dict:
             for key in dictionary.keys():
@@ -94,6 +99,9 @@ class SignalProcessor(Logger,Qt.QObject):
         '''
         #TODO: perhaps the progress bar can be be also used.
         categories = self._splitInCategories()
+        self._signalsCalculated = 0
+        self._signals2Calculate = \
+                           len(categories['facade'])+len(categories['formula'])
         if self._doFacadeFits(categories):
             self.debug("After facade calculations %d signals ready: %s"
                        %(len(categories['ready']),categories['ready']))
@@ -108,8 +116,13 @@ class SignalProcessor(Logger,Qt.QObject):
             self.error("Aborting signal processing because formulas"\
                        "cannot be satisfied")
             return False
-        self.change.emit()
+        self.allProcessed.emit()
         return True
+    @property
+    def processPercentage(self):
+        if self._signals2Calculate > 0:
+            return int((self._signalsCalculated*100)/self._signals2Calculate)
+        return 0
 
     #--- First descendant level
     def _splitInCategories(self):
@@ -156,6 +169,8 @@ class SignalProcessor(Logger,Qt.QObject):
                     try:
                         self._calculate(aSignal)
                         calculated.append(aSignal)
+                        self._signalsCalculated += 1
+                        self.oneProcessed.emit()
                         self.debug("Facade signal %s calculated"%(aSignal))
                     except Exception,e:
                         self.error("Exception calculating facade %s signal:"\
@@ -195,6 +210,8 @@ class SignalProcessor(Logger,Qt.QObject):
                     try:
                         self._calculate(aSignal)
                         calculated.append(aSignal)
+                        self._signalsCalculated += 1
+                        self.oneProcessed.emit()
                         self.debug("Formula signal %s calculated"%(aSignal))
                     except Exception,e:
                         self.error("Exception calculating formula %s signal:"\

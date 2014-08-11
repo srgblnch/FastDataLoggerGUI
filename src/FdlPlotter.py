@@ -107,6 +107,10 @@ class Plotter(Logger):
         #Those locations must correspond with FdlFileParser.SignalFields
         #within each signal the key 'gui' must have a 'tab' and 'plot' keys
         #that indicates a widget on this dictionary
+    def cleanAllPlots(self):
+        for aTab in self._widgetsMap.keys():
+            for aPlot in self._widgetsMap[aTab].keys():
+                self._widgetsMap[aTab][aPlot].clearAllRawData()
     def appendSignals(self,dictionary):
         if type(dictionary) == dict:
             for key in dictionary.keys():
@@ -126,6 +130,8 @@ class Plotter(Logger):
                        %(len(self._signals.keys())))
         else:
             raise TypeError("Unknown how append %s data type"%type(dictionary))
+    def cleanSignals(self):
+        self._signals = {}
     def _isPlottableSignal(self,name):
         return SignalFields.has_key(name) and \
                SignalFields[name].has_key(gui)
@@ -182,6 +188,8 @@ class Plotter(Logger):
     
     def _forcePlot(self):
         self.debug("starting plotting procedure: %s"%(self._signals.keys()))
+        #FIXME: this must be smarter
+        self.cleanAllPlots()
         for signalName in self._signals.keys():
             self.debug("Signal %s will be plotted"%(signalName))
             self._plotSignal(signalName)
