@@ -30,7 +30,7 @@
 ###############################################################################
 
 import taurus
-from taurus.core.util import Logger
+from FdlLogger import *
 try:#normal way
     from taurus.external.qt import Qt,QtGui,QtCore
 except:#backward compatibility to pyqt 4.4.3
@@ -43,13 +43,13 @@ from facadeadjustments import facadeAdjustments
 
 FACADES_SERVERNAME = 'LLRFFacade'
 
-class FacadeManager(Logger,Qt.QObject):
+class FacadeManager(FdlLogger,Qt.QObject):
     try:#normal way
         updated = QtCore.pyqtSignal()
     except:#backward compatibility to pyqt 4.4.3
         updated = MyQtSignal('change')
     def __init__(self,facadeInstanceName,beamCurrent=100):
-        Logger.__init__(self)
+        FdlLogger.__init__(self)
         try:#normal way
             Qt.QObject.__init__(self, parent=None)
         except:#backward compatibility to pyqt 4.4.3

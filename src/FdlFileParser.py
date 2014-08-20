@@ -29,41 +29,42 @@
 ##
 ###############################################################################
 
-from taurus.core.util import Logger
+from FdlLogger import *
+from FdlSignals import *
+
 import numpy as np
 import scipy as sp
-try:#normal way
-    from taurus.external.qt import Qt,QtGui,QtCore,Qwt5
-except:#backward compatibility to pyqt 4.4.3
-    from taurus.qt import Qt,QtGui,QtCore,Qwt5
 from threading import Thread,Event
 from math import sqrt
 from copy import copy
 import traceback
 import time
 
-from FdlSignals import *
+try:#normal way
+    from taurus.external.qt import Qt,QtGui,QtCore,Qwt5
+except:#backward compatibility to pyqt 4.4.3
+    from taurus.qt import Qt,QtGui,QtCore,Qwt5
 
 SEPARATOR = 0x7FFF
 LOAD_ERROR_RATE = 0.01
 
-class MyQtSignal(Logger):
+class MyQtSignal(FdlLogger):
     '''This class is made to emulate the pyqtSignals for too old pyqt versions.
     '''
     def __init__(self,name,parent=None):
-        Logger.__init__(self,parent)
+        FdlLogger.__init__(self,parent)
         self._parent = parent
         self._name = name
         self._cb = []
     def emit(self):
-        self.info("Signal %s emit (%s)"%(self._name,self._cb))
+        self.debug("Signal %s emit (%s)"%(self._name,self._cb))
         Qt.QObject.emit(self._parent,Qt.SIGNAL(self._name))
     def connect(self,callback):
         self.error("Trying a connect on MyQtSignal(%s)"%(self._name))
         raise Exception("Invalid")
         #self._cb.append(callback)
 
-class nditer(Logger):
+class nditer(FdlLogger):
     '''This class is made to emulate np.nditer for too old numpy versions.
     '''
     def __init__(self,data):
@@ -82,18 +83,20 @@ class nditer(Logger):
         except:
             raise StopIteration("Out of range")
 
-class FdlFile(Logger,Qt.QObject):
+class FdlFile(FdlLogger,Qt.QObject):
     try:#normal way
         step = QtCore.pyqtSignal()
         done = QtCore.pyqtSignal()
         aborted = QtCore.pyqtSignal()
+        swapping = QtCore.pyqtSignal()
     except:#backward compatibility to pyqt 4.4.3
         step = MyQtSignal('step')
         done = MyQtSignal('done')
         aborted = MyQtSignal('aborted')
+        swapping = MyQtSignal('swapping')
     
     def __init__(self,filename,loadErrorRate=LOAD_ERROR_RATE):
-        Logger.__init__(self)
+        FdlLogger.__init__(self)
         try:#normal way
             Qt.QObject.__init__(self, parent=None)
         except:#backward compatibility to pyqt 4.4.3
@@ -101,6 +104,9 @@ class FdlFile(Logger,Qt.QObject):
             self.step._parent = self
             self.done._parent = self
             self.aborted._parent = self
+            self.swapping._parent = self
+        self._standby = Event()
+        self._standby.clear()
         self._filename = filename
         self._loadErrorRate=loadErrorRate
         self._signals = {}
@@ -125,10 +131,14 @@ class FdlFile(Logger,Qt.QObject):
             raw = file.read()
             #as the contents are elements of 16 bits:
         size = len(raw)/2
-        self.info("Read %s, found %d elements"%(self._filename,size))
+        self.info("Read %s, found %d elements (%d bytes)"
+                  %(self._filename,size,self._getsizeof(raw)))
         self._values = np.ndarray(buffer=raw,
                                   shape=size,
                                   dtype=np.int16)
+        del raw
+        self.debug("load data converted to a np.ndarray: %d bytes"
+                   %(self._getsizeof(self._values)))
         try:#normal way
             self._iterator = np.nditer(self._values)
         except:#backward compatibility to numpy 1.3.0
@@ -137,6 +147,12 @@ class FdlFile(Logger,Qt.QObject):
         self.info("First tag found in position %d. Sets size %d "\
                   "(including the separator)"
                   %(self._offset,self._nsignals+1))
+        self.memory()
+    
+    def sizeofSignals(self):
+        self.debug("%s signals mean %d kB"
+                   %(len(self._signals.keys()),
+                     self._getsizeof(self._signals)/1024))
     
     def _prepare(self):
         self.prepareSignalSet()
@@ -216,25 +232,34 @@ class FdlFile(Logger,Qt.QObject):
                 #FIXME:this is for debug, to be eliminated
                 #but it may be used to emit signals about 
                 #the progress of the process
-                if self._iterator.iterindex%1e6 == self._offset:
-                    current = self._iterator.iterindex
-                    total = float(self._iterator.itersize)
-                    self._percentage = int((current/total)*100)
-                    self.info("we are at %d%% (%d of %d)"
+                current = self._iterator.iterindex
+                total = float(self._iterator.itersize)
+                if self._percentage != int((current*100)/total):
+                    self._percentage = int((current*100)/total)
+                    #if True: #self._iterator.iterindex%1e6 == self._offset:
+                    self.info("we are at %d%% (%d of %d with %d offset)"
                               %(self._percentage,self._iterator.iterindex,
-                                self._iterator.itersize))
+                                self._iterator.itersize,self._offset))
+                    self.sizeofSignals()
                     self.step.emit()
+                    self.memory()
+                    if self.isProcessSwapping():
+                        self.swapping.emit()
+                        self._standby.set()
+                        while self._standby.isSet():
+                            time.sleep(1)
             self.rate
             self.step.emit()
             if self._isEndOfFile():
                 self._percentage = 100
                 self.postprocess()
                 self.done.emit()
-                self.info("Process file completed: 100%")
+                self.debug("Process file completed: 100%")
             else:
                 self.aborted.emit()
                 self.warning("Process aborted: %d%%"%(self._percentage))
             self.info("Process has take %g seconds"%(time.time()-self._t0))
+            self.memory()
             return True
         except Exception,e:
             self.error("file process cannot be completed! Exception: %s"%(e))
@@ -245,7 +270,7 @@ class FdlFile(Logger,Qt.QObject):
     def processSignalSet(self):
         for keyName in self._signals.keys():
             fieldName = SignalFields[keyName][field]
-            value = self._values[self._iterator.iterindex+LoopsFields[fieldName]]
+            value = self._values[self._iterator.iterindex+self._fields[fieldName]]
             self._signals[keyName].append(float(value)/32767*1000)
     #--- done processing area
     ####
@@ -257,11 +282,17 @@ class FdlFile(Logger,Qt.QObject):
         self._interrupt.set()
     
     def postprocess(self):
+        self.debug("clean values array (%d kB)"
+                   %(self._getsizeof(self._values)/1024))
+        self._values = None
         self.info("Start post-processing %d signals"%(len(self._signals.keys())))
         #Convert the collected data to numpy.array
         for signal in self._signals.keys():
+            asList = self._getsizeof(self._signals[signal])
             self._signals[signal] = np.array(self._signals[signal])
-            self.debug("Converted %s list to numpy array"%(signal))
+            asArray = self._getsizeof(self._signals[signal])
+            self.debug("Converted %s list (%d bytes) to array (%d bytes)"
+                       %(signal,asList,asArray))
         #check the signal descriptors that have an amplitude conversion
         for keyName in SignalFields.keys():
             if self.hasIandQ(keyName):
@@ -273,6 +304,8 @@ class FdlFile(Logger,Qt.QObject):
                 self._signals[keyName] = np.sqrt((Isignal**2)+(Qsignal**2))
         self.debug("Post-processed signal set (%d): %s"
                    %(len(self._signals.keys()),self._signals.keys()))
+        self.sizeofSignals()
+        self.memory()
     #--- done postprocessing area
     ####
     
@@ -280,7 +313,7 @@ class FdlFile(Logger,Qt.QObject):
     #--- auxiliar resources area
     @property
     def percentage(self):
-        self.info("Percentage requested: %d%%"%(self._percentage))
+        #self.debug("Percentage requested: %d%%"%(self._percentage))
         return self._percentage
     
     @property

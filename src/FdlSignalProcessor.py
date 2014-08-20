@@ -32,42 +32,47 @@
 import numpy as np
 from copy import copy
 
-from taurus.core.util import Logger
+from FdlLogger import *
+from FdlSignals import *
+
 try:#normal way
     from taurus.external.qt import Qt,QtCore
 except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt
     from FdlFileParser import MyQtSignal
-from FdlSignals import *
 
+import threading
 import traceback
 
 #TODO: optimise, when one or more facade parameters change not all the 
 #      calculations has to be repeated, only the involved.
 
-class SignalProcessor(Logger,Qt.QObject):
+class SignalProcessor(FdlLogger,Qt.QObject):
     try:#normal way
         oneProcessed = QtCore.pyqtSignal()
         allProcessed = QtCore.pyqtSignal()
+        swapping = QtCore.pyqtSignal()
     except:#backward compatibility to pyqt 4.4.3
         allProcessed = MyQtSignal('allProcessed')
         oneProcessed = MyQtSignal('oneProcessed')
-    def __init__(self,facade=None,loopsSignals=None,diagSignals=None):
-        Logger.__init__(self)
+        swapping = MyQtSignal('swapping')
+
+    def __init__(self,facade=None):
+        FdlLogger.__init__(self)
         try:#normal way
             Qt.QObject.__init__(self, parent=None)
         except:#backward compatibility to pyqt 4.4.3
             Qt.QObject.__init__(self)
             self.allProcessed._parent = self
             self.oneProcessed._parent = self
+            self.swapping._parent = self
+        self._standby = threading.Event()
+        self._standby.clear()
         self.setFacade(facade)
         self._signals = {}
-        if loopsSignals!=None:
-            self.appendSignals(loopsSignals)
-        if diagSignals!=None:
-            self.appendSignals(diagSignals)
         self._signalsCalculated = 0
         self._signals2Calculate = 0
+
     def appendSignals(self,dictionary):
         if type(dictionary) == dict:
             for key in dictionary.keys():
@@ -75,18 +80,15 @@ class SignalProcessor(Logger,Qt.QObject):
                     self.warning("Append an existing signal (%s) overwrite "\
                                  "old content."%(key))
                 self._signals[key] = dictionary[key]
-                self.info("Appending %s signal"%(key))
+                self.debug("The addition of %s means %d kB"
+                           %(key,self.getSubobjectSize(self._signals[key])))
         else:
             raise TypeError("Unknown how append %s data type"%type(dictionary))
+        self.debug("Signals size %d kB"%(self.getSubobjectSize(self._signals)))
+        self.memory()
+
     def setFacade(self,facade):
         self._facade = facade
-#        if self._facade:
-#            try:#normal way
-#                self._facade.updated.connect(self.process)
-#            except:#backward compatibility to pyqt 4.4.3
-#                Qt.QObject.connect(self._facade,
-#                                   Qt.SIGNAL('updated'),
-#                                   self.process)
 
     def process(self):
         '''collect all signal keys splitting in 3 categories
@@ -102,21 +104,23 @@ class SignalProcessor(Logger,Qt.QObject):
         self._signalsCalculated = 0
         self._signals2Calculate = \
                            len(categories['facade'])+len(categories['formula'])
-        if self._doFacadeFits(categories):
+        if self._doCalculations(categories, 'facade'):
             self.debug("After facade calculations %d signals ready: %s"
                        %(len(categories['ready']),categories['ready']))
         else:
             self.error("Aborting signal processing because facade fits "\
                        "cannot be satisfied")
             return False
-        if self._doFormulaCalcs(categories):
+        if self._doCalculations(categories, 'formula'):
             self.debug("After formula calculations %d signals ready: %s"
                        %(len(categories['ready']),categories['ready']))
         else:
             self.error("Aborting signal processing because formulas"\
                        "cannot be satisfied")
             return False
+        self.info("Signal processor is done.")
         self.allProcessed.emit()
+        self.memory()
         return True
     @property
     def processPercentage(self):
@@ -131,10 +135,11 @@ class SignalProcessor(Logger,Qt.QObject):
         withFormula = []
         orphan = []
         for signalName in SignalFields.keys():
-            if self._isFileSignal(signalName) and signalName in self._signals.keys():
+            if self._isFileSignal(signalName):
                 #is an I or Q, or an amplitude
                 doneSignals.append(signalName)
-            elif self._isFacadeFit(signalName):
+            elif self._isFacadeFit(signalName) and \
+                 self._isVbleInOurSet(signalName):
                 facadeFit.append(signalName)
             elif self._isFormula(signalName):
                 withFormula.append(signalName)
@@ -152,88 +157,61 @@ class SignalProcessor(Logger,Qt.QObject):
                 'facade':facadeFit,
                 'formula':withFormula,
                 'orphan':orphan}
-        
-    #FIXME: the next two methods would be merged in one, 
-    #       they are almost the same.
-    def _doFacadeFits(self,categories):
-        facadeSignals = categories['facade']
-        calculated = categories['ready']
-        lastPendingFacadeSignals = [0]*len(facadeSignals)+[len(facadeSignals)]
-        while len(facadeSignals) > 0 and \
-              len(set(lastPendingFacadeSignals)) != 1:
-            aSignal = facadeSignals.pop(0)
-            try:
-                dependencies = [SignalFields[aSignal][vble]]#Diff with formula
-                unsatisfied = list(set(dependencies).difference(calculated))
-                if len(unsatisfied) == 0:
-                    try:
-                        self._calculate(aSignal)
-                        calculated.append(aSignal)
-                        self._signalsCalculated += 1
-                        self.oneProcessed.emit()
-                        self.debug("Facade signal %s calculated"%(aSignal))
-                    except Exception,e:
-                        self.error("Exception calculating facade %s signal:"\
-                                   " %s"%(aSignal,e))
-                else:
-                    #when it's unsatisfied, append to retry
-                    facadeSignals.append(aSignal)
-                    self.warning("Facade signal %s cannot be yet calculated "\
-                                 "due to %d unsatisfied: %s"
-                                 %(aSignal,len(unsatisfied),unsatisfied))
-            except Exception,e:
-                self.error("Exception with %s dependencies: %s"%(aSignal,e))
-            else:
-                lastPendingFacadeSignals.pop(0)
-                lastPendingFacadeSignals.append(len(facadeSignals))
-                self.debug("Three last loops facade pending signals: %s"
-                           %(lastPendingFacadeSignals))
-        if len(set(lastPendingFacadeSignals)) == 1:
-            self.error("Process has not finished well. There are pending "\
-                       "calculations: %s"%(facadeSignals))
-            return False
-        return True
     
-    def _doFormulaCalcs(self,categories):
-        formulaSignals = categories['formula']
+    def _doCalculations(self,categories,inputTag):
+        inputSignals = categories[inputTag]
         calculated = categories['ready']
-        lastPendingFormulaSignals = [0]*len(formulaSignals)+[len(formulaSignals)]
-        while formulaSignals != [] and \
-              len(set(lastPendingFormulaSignals)) != 1:
-            #while there are pending elements or 
-            #last 3 loops didn't reduce the list
-            aSignal = formulaSignals.pop(0)
+        lastPendingSignals = [0]*len(inputSignals)+[len(inputSignals)]
+        while len(inputSignals) > 0 and \
+              len(set(lastPendingSignals)) != 1:
+              #while there are signals to process and it's not stall with 
+              #insatisfactible dependencies:
+            aSignal = inputSignals.pop(0)
             try:
-                dependencies = SignalFields[aSignal][depend]
+                dependencies = self._takeDepenedencies(aSignal)
                 unsatisfied = list(set(dependencies).difference(calculated))
                 if len(unsatisfied) == 0:
                     try:
                         self._calculate(aSignal)
                         calculated.append(aSignal)
-                        self._signalsCalculated += 1
+                        self._signalsCalculated+=1
                         self.oneProcessed.emit()
-                        self.debug("Formula signal %s calculated"%(aSignal))
+                        self.debug("New %s signal %s calculated"
+                                   %(inputTag,aSignal))
                     except Exception,e:
-                        self.error("Exception calculating formula %s signal:"\
-                                   " %s"%(aSignal,e))
-                        traceback.print_exc()
+                        self.error("Exception calculating %s signal %s: %s"
+                                   %(inputTag,aSignal,e))
                 else:
-                    #when it's unsatisfied, append to retry
-                    formulaSignals.append(aSignal)
-                    self.warning("Formula signal %s cannot be yet calculated "\
-                                 "due to unsatisfied %s"%(aSignal,unsatisfied))
+                    #when dependencies are unsatisfied, append to the end 
+                    #to retry it later. That's why there is another stopper in
+                    #the loop when all signals has been check and the 
+                    #dependencies will never be satisfied.
+                    inputSignals.append(aSignal)
+                    self.warning("The %s signal %s cannot be yet calculated "\
+                                 "due to %d unsatisfied dependencies: %s"
+                                 %(inputTag,aSignal,
+                                   len(unsatisfied),unsatisfied))
             except Exception,e:
-                self.error("Exception with %s dependencies: %s"%(aSignal,e))
+                self.error("Exception in %s with %s dependencies: %s"
+                           %(inputTag,aSignal,e))
             else:
-                lastPendingFormulaSignals.pop(0)
-                lastPendingFormulaSignals.append(len(formulaSignals))
-                self.debug("Three last loops formula pending signals: %s"
-                           %(lastPendingFormulaSignals))
-        if len(set(lastPendingFormulaSignals)) == 1:
-            self.error("Process has not finished well. There are pending "\
-                       "calculations: %s"%(formulaSignals))
+                lastPendingSignals.pop(0)
+                lastPendingSignals.append(len(inputSignals))
+                self.debug("%d of the last loops in %s pending signal:"
+                           %(len(lastPendingSignals),lastPendingSignals))
+        if len(set(lastPendingSignals)) < 1:
+            self.error("Process has NOT finished well! There are pending "\
+                       "calculations: %s"%(inputSignals))
             return False
         return True
+        
+    def _takeDepenedencies(self,signalName):
+        if SignalFields[signalName].has_key(vble):
+            return [SignalFields[signalName][vble]]
+        elif SignalFields[signalName].has_key(depend):
+            return SignalFields[signalName][depend]
+        else:
+            return []
 
     #--- Second descendant level
     def _calculate(self,signal):
@@ -248,7 +226,7 @@ class SignalProcessor(Logger,Qt.QObject):
             self._signals[signal] = \
                     (self._signals[SignalFields[signal][vble]]**2/10e8/10**c)-o
         elif self._isFormula(signal):
-            self.info("Calculating %s using formula %s"
+            self.info("Calculating %s using formula '%s'"
                       %(signal,SignalFields[signal][formula]))
             try:
                 beamCurrent = self._getFacadesBeamCurrent()
@@ -265,8 +243,16 @@ class SignalProcessor(Logger,Qt.QObject):
         else:
             self.info("nothing to do with %s signal"%(signal))
             return
-        self.debug("Made the calculation for the signal %s (%d values)"
-                   %(signal,len(self._signals[signal])))
+        self.debug("Made the calculation for the signal %s (%d values), "\
+                   "extra %d kB"
+                   %(signal,len(self._signals[signal]),
+                     self.getSubobjectSize(self._signals[signal])))
+        self.memory()
+        if self.isProcessSwapping():
+            self.swapping.emit()
+            self._standby.set()
+            while self._standby.isSet():
+                time.sleep(1)
 
     #--- Third descendant level
     def _getFacadesMandNs(self,signal):
@@ -285,22 +271,48 @@ class SignalProcessor(Logger,Qt.QObject):
         else:
             return 100.0
     def _isFileSignal(self,signal):
+        if not self._isSignalInOurSet(signal):
+            return False
         hasFieldField = SignalFields[signal].has_key(field)
         hasI = SignalFields[signal].has_key(I)
         hasQ = SignalFields[signal].has_key(Q)
         return hasFieldField or (hasI and hasQ)
+    def _isSignalInOurSet(self,signal):
+        return signal in self._signals.keys()
+    def _isVbleInOurSet(self,signal):
+        vbleName = SignalFields[signal][vble]
+        if self._isFileSignal(vbleName) and \
+           self._isSignalInOurSet(vbleName):
+            return True
     def _isFacadeFit(self,signal):
         return self._isLinear(signal) or self._isQuadratic(signal)
     def _isLinear(self,signal):
-        return SignalFields[signal].has_key(vble) and \
-               SignalFields[signal].has_key(slope) and \
-               SignalFields[signal].has_key(offset)
+        if SignalFields[signal].has_key(vble) and \
+           self._isFileSignal(SignalFields[signal][vble]):
+            return SignalFields[signal].has_key(slope) and \
+                   SignalFields[signal].has_key(offset)
+        return False
     def _isQuadratic(self,signal):
-        return SignalFields[signal].has_key(vble) and \
-               SignalFields[signal].has_key(couple) and \
-               SignalFields[signal].has_key(offset)
+        if SignalFields[signal].has_key(vble) and \
+           self._isFileSignal(SignalFields[signal][vble]):
+            return SignalFields[signal].has_key(couple) and \
+                   SignalFields[signal].has_key(offset)
+        return False
     def _isFormula(self,signal):
-        return SignalFields[signal].has_key(formula)
+        if SignalFields[signal].has_key(formula):
+            #if any of the dependencies is NOT facade fit
+            signalDependencies = copy(SignalFields[signal][depend])
+            for i,aDependency in enumerate(signalDependencies):
+                #FIXME: this is risky without a nesting control
+                if self._isFormula(aDependency) or \
+                   self._isFacadeFit(aDependency) or \
+                   self._isFileSignal(aDependency):
+                    signalDependencies[i] = True
+                else:
+                    signalDependencies[i] = False
+            if all(signalDependencies):
+                return True
+        return False
 
 def fileLoader(fileName):
     import json

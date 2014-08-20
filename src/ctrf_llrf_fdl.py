@@ -24,6 +24,7 @@
 #############################################################################
 
 import os,sys
+import time
 
 #The widgets are stored in a subdirectory and 
 #needs to be added to the pythonpath
@@ -38,6 +39,7 @@ except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt,QtGui,QtCore
     from FdlFileParser import MyQtSignal
 from taurus.core.util import argparse,Logger
+from FdlLogger import *
 from taurus.qt.qtgui.application import TaurusApplication
 from taurus.qt.qtgui.container import TaurusMainWindow
 from taurus.qt.qtgui.base.taurusbase import TaurusBaseComponent
@@ -49,11 +51,12 @@ from FdlFileParser import LoopsFile,DiagnosticsFile
 from FdlSignals import SignalFields,y2
 from FdlFacadeManager import FacadeManager,FACADES_SERVERNAME
 from FdlSignalProcessor import SignalProcessor
-from FdlPlotter import Plotter
+from FdlPlotter import Plotter,DecimationThreshold
 
-class MainWindow(TaurusMainWindow):
+class MainWindow(TaurusMainWindow,FdlLogger):
     def __init__(self, parent=None):
         TaurusMainWindow.__init__(self)
+        FdlLogger.__init__(self)
         self.ui = Ui_FastDataLoggerDLLRF()
         self.ui.setupUi(self)
         self.initComponents()
@@ -64,6 +67,7 @@ class MainWindow(TaurusMainWindow):
         #self._facadaAdjustments = None
         self._facade = None
         self._postProcessor = None
+        self._plotter = None
         self.splashScreen().finish(self)
     def initComponents(self):
         self.setWindowTitle("RF DLLRF FDL Taurus User Interface")
@@ -105,7 +109,8 @@ class MainWindow(TaurusMainWindow):
         #decimation
         self.ui.timeAndDecimation._ui.decimationValue.setMinimum(1)
         self.ui.timeAndDecimation._ui.decimationValue.setMaximum(1000)
-        self.ui.timeAndDecimation._ui.decimationValue.setValue(1)
+        self.ui.timeAndDecimation._ui.decimationValue.\
+                                                  setValue(DecimationThreshold)
         #progress bar initial value
         self.updateProgressBar(100)
     
@@ -168,21 +173,21 @@ class MainWindow(TaurusMainWindow):
     ####
     #--- Load file section
     def loadFile(self):
-        self.info("Load file clicked")
+        self.debug("Load file clicked")
         if self._loader == None:
             self._loader = LoadFileDialog(self)
             self.connectSignal(self._loader,'closeApp',self.closeLoaderWidget)
             self.connectSignal(self._loader,'selectionDone',self.prepare)
         self._loader.show()
     def closeLoaderWidget(self):
-        self.info("closeLoaderWidget()")
+        self.debug("closeLoaderWidget()")
         self._loader.hide()
         self._loader = None
+
     def prepare(self):
-        if hasattr(self,'_plotter') and self._plotter != None:
-            self._plotter.cleanAllPlots()
+        self.cleanPrevious()
         selection = self._loader.getSelection()
-        self.info("prepare(): %s"%(str(selection)))
+        self.debug("prepare(): %s"%(str(selection)))
         self._loader.hide()
         #build a FdlFileParser objects
         self.prepareProgressBar()
@@ -190,18 +195,30 @@ class MainWindow(TaurusMainWindow):
             self._loopsParser = LoopsFile(selection['Loops'])
             self.connectSignal(self._loopsParser,'step',self.loadingStep)
             self.connectSignal(self._loopsParser,'done',self.loadComplete)
+            self.connectSignal(self._loopsParser,'swapping',
+                           self.itsSwapping)
             self._loopsParser.process()
+            self.memory()
+        else:
+            self._loopsParser = None
+            self.callCarbageCollector()
         if len(selection['Diag']) > 0:
             self._diagParser = DiagnosticsFile(selection['Diag'])
             self.connectSignal(self._diagParser,'step',self.loadingStep)
             self.connectSignal(self._diagParser,'done',self.loadComplete)
+            self.connectSignal(self._diagParser,'swapping',
+                           self.itsSwapping)
             self._diagParser.process()
+            self.memory()
+        else:
+            self._diagParser = None
+            self.callCarbageCollector()
+        self.parsingStatusMessage()
         #facade and plotting:
         self.facadeManagerBuilder(selection['facade'],selection['beamCurrent'])
         if self._facade.populateFacadeParams():
             self._facade.doFacadeAdjusments()
-        self.signalProcessorBuilder()
-        self.plotManagerBuilder()
+        self.memory()
         self._loader = None
     def connectSignal(self,obj,signalStr,callback):
         try:
@@ -220,16 +237,21 @@ class MainWindow(TaurusMainWindow):
         self.updateProgressBar()
         
     def loadComplete(self):
-        self.endProgressBar()
-        #TODO: report the anomalities rate in the statusBar
-        self.populateSignalProcessor()
-        self._postProcessor.process()
-        #FIXME: report the user if something wasn't possible to be calculated
+        alldone = True
+        if self._getGlobalPercentage() == 100:
+            self.endProgressBar()
+            self.signalProcessorBuilder()
+            self.populateSignalProcessor()
+            self.enableProgressBar(False)
+            self._postProcessor.process()
+            #FIXME: report the user if something wasn't possible to be calculated
+        #TODO: report the anomalies rate in the statusBar
     def cancel(self):
         if self._loopsParser != None:
             self._loopsParser.abort()
         if self._diagParser != None:
             self._diagParser.abort()
+        self._closeFacadeDialog()
         self._enableWidgets(True)
     #--- done load file section
     ####
@@ -241,17 +263,20 @@ class MainWindow(TaurusMainWindow):
     def prepareProgressBar(self):
         self._enableWidgets(False)
         self.ui.progressBar.setValue(0)
+    def _getGlobalPercentage(self):
+        value = 0
+        if self._loopsParser != None:
+            value = self._loopsParser.percentage
+        if self._diagParser != None:
+            if value != 0:
+                value = (value+self._diagParser.percentage)/2
+            else:
+                value = self._diagParser.percentage
+        return value
     def updateProgressBar(self,value=None):
         if value == None:
-            value = 0
-            if self._loopsParser != None:
-                value = self._loopsParser.percentage
-            if self._diagParser != None:
-                if value != 0:
-                    value = (value+self._diagParser.percentage)/2
-                else:
-                    value = self._diagParser.percentage
-        self.debug("new progress bar value %g"%(value))
+            value = self._getGlobalPercentage()
+        self.debug("new progress bar value %g%%"%(value))
         self.ui.progressBar.setValue(int(value))
     def endProgressBar(self):
         if self.areParsersProcessing():
@@ -261,6 +286,19 @@ class MainWindow(TaurusMainWindow):
         self.debug("No more parsers working, proceed to calculations")
         self.ui.progressBar.setValue(100)
         self._enableWidgets(True)
+    def showMessage(self,msg):
+        self.statusBar().showMessage(msg)
+    def parsingStatusMessage(self):
+        if self._loopsParser != None and self._diagParser != None:
+            self.showMessage("Parsing Loops and Diagnostics files.")
+        elif self._loopsParser != None:
+            self.showMessage("Parsing Loops file.")
+        elif self._loopsParser != None:
+            self.showMessage("Parsing Diagnostics file.")
+    def processingStatusMessage(self):
+        self.showMessage("Doing the data calculations.")
+    def plottingStatusMessage(self):
+        self.showMessage("Plotting the signals.")
     #--- done progress bar tools
     ####
     
@@ -282,8 +320,8 @@ class MainWindow(TaurusMainWindow):
     #--- facade information area
     def facadeManagerBuilder(self,instanceName,beamCurrent):
         if self._facade != None and self._facade.instanceName != instanceName:
-            del self._facade
             self._facade = None
+            self.callCarbageCollector()
         if self._facade == None:
             self._facade = FacadeManager(instanceName,beamCurrent)
         self.facadeAction.setEnabled(True)
@@ -296,24 +334,49 @@ class MainWindow(TaurusMainWindow):
     #--- 
     def signalProcessorBuilder(self):
         self.debug("Builder for the SignalProcessor")
-        self._postProcessor = SignalProcessor(self._facade)
-        self.connectSignal(self._facade,'updated', self.facadeHasUpdated)
-        self.connectSignal(self._postProcessor,'oneProcessed',
-                           self.oneSignalProcessed)
+        if self._postProcessor != None:
+            self.callCarbageCollector()
+        else:
+            self._postProcessor = SignalProcessor(self._facade)
+            self.connectSignal(self._facade,'updated', self.facadeHasUpdated)
+            self.connectSignal(self._postProcessor,'oneProcessed',
+                               self.oneSignalProcessed)
+            self.connectSignal(self._postProcessor,'allProcessed',
+                               self.allSignalsProcessed)
+            self.connectSignal(self._postProcessor,'swapping',
+                               self.itsSwapping)
     def populateSignalProcessor(self):
         if self._loopsParser != None:
             self._postProcessor.appendSignals(self._loopsParser._signals)
+            self.debug("loopsParser size is %d bytes, and it has delivered "\
+                       "its data to postProcessor"
+                       %(self._loopsParser.getObjectSize()))
+            self._loopsParser = None
         if self._diagParser != None:
             self._postProcessor.appendSignals(self._diagParser._signals)
+            self.debug("diagParser size is %d bytes, and it has delivered "\
+                       "its data to postProcessor"
+                       %(self._diagParser.getObjectSize()))
+            self._diagParser = None
+            self.memory()
     def facadeHasUpdated(self):
         self.debug("Received update signal from facade and calling processor")
         if not self.areParsersProcessing():
             self.enableProgressBar(True)
+            self.processingStatusMessage()
             self._postProcessor.process()
+            self.memory()
     def oneSignalProcessed(self):
         self.debug("Received from SignalProcessor that one signal more has"\
                    "been processed. Update progress bar.")
         self.updateProgressBar(self._postProcessor.processPercentage)
+        self.memory()
+    def allSignalsProcessed(self):
+        self.debug("Received from SignalProcessor that all signals has been "\
+                   "processed. Create the Plotter")
+        self.updateProgressBar(100)
+        self.enableProgressBar(False)
+        self.plotManagerBuilder()
     #---
     ####
 
@@ -321,21 +384,71 @@ class MainWindow(TaurusMainWindow):
     #--- plotting section
     def plotManagerBuilder(self):
         self.debug("Builder for the Plotter")
-        self._plotter = Plotter(self)
-        self.connectSignal(self._postProcessor,'allProcessed',
-                           self.allSignalsProcessed)
+        if self._plotter != None:
+            self.callCarbageCollector()
+        else:
+            self._plotter = Plotter(self)
+            self.connectSignal(self._plotter,'swapping',self.itsSwapping)
+            self.connectSignal(self._plotter,'onePlotted',self.onePlotted)
+            self.connectSignal(self._plotter,'allPlotted',self.allPlotted)
         self.populatePlotter()
     def populatePlotter(self):
         self._plotter.cleanSignals()
         self._plotter.appendSignals(self._postProcessor._signals)
-    def allSignalsProcessed(self):
-        self.debug("Received from SignalProcessor that all signals has been "\
-                   "processed. Report to the Plotter")
+        self.enableProgressBar(True)
+        self.plottingStatusMessage()
+        self._plotter.doPlots(force=True)
+        self.memory()
+    def onePlotted(self):
+        self.updateProgressBar(self._plotter.processPercentage)
+        self.memory()
+    def allPlotted(self):
         self.updateProgressBar(100)
         self.enableProgressBar(False)
-        self.populatePlotter()
-        self._plotter.doPlots(force=True)
+        self.cleanLoaders()
+        self.memory()
+        self.showMessage("")
     #--- done plotting section
+    ####
+    
+    ####
+    #--- Memory issues managing area
+    def cleanPrevious(self):
+        if self._postProcessor != None:
+            self._postProcessor = None
+        if self._plotter != None:
+            self._plotter = None
+        self.callCarbageCollector()
+    def cleanLoaders(self):
+        if self._loopsParser != None:
+            self._loopsParser = None
+        if self._diagParser != None:
+            self._diagParser = None
+        self.callCarbageCollector()
+    def itsSwapping(self):
+        if self.isProcessSwapping():
+            QtGui.QMessageBox.warning(self,"Alert: swapping!",
+            "The application has start to use swap memory and its process has"\
+            "been paused. It will resume when memory issue is fixed.")
+        while self._thereAreObjectsInStandby():
+            if not self.isProcessSwapping():
+                self._swapRecovery()
+            else:
+                swapUse,swapUnit = biggestBinaryPrefix(
+                                            self.getProcessSwapUse(),unit='kB')
+                self.debug("Still in swap (%s %s)"%(swapUse,swapUnit))
+                time.sleep(1)
+    def _thereAreObjectsInStandby(self):
+        return self._loopsParser._standby.isSet() or \
+               self._diagParser._standby.isSet() or \
+               self._postProcessor._standby.isSet() or \
+               self._plotter._standby.isSet()
+    def _swapRecovery(self):
+        for standby in [self._loopsParser._standby,self._diagParser._standby,
+                        self._postProcessor._standby,self._plotter._standby]:
+            if stanby.isSet():
+                standby.clear()
+    #--- done memory issues managing area
     ####
 
 sandbox = '/data'
@@ -455,7 +568,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         filters = "Binary data files (*.dat);;All files (*)"
         fileName = str(QtGui.QFileDialog.getOpenFileName(self,dialogTitle,
                                                 defaultConfigurations,filters))
-        self.info("Selected: %s"%(fileName))
+        self.debug("Selected: %s"%(fileName))
         shortName = fileName.rsplit('/',1)[1].split('_')[1]
         self._plant = PlantTranslator(shortName)
         if not self._plant.completeName in knownPlants:
@@ -493,7 +606,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         self.info("Selecting the plant: %s"%(str(plant)))
         currentText = self.panel().locationCombo.currentText()
         currentIndex = self.panel().locationCombo.currentIndex()
-        self.info("Current combo text: %s at %d"
+        self.debug("Current combo text: %s at %d"
                   %(currentText,currentIndex))
         newIndex = self.panel().locationCombo.findText(str(plant))
         if newIndex != currentIndex and currentText != '':
@@ -506,7 +619,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         #it cannot be smart enough to know that
 
     def searchFacade(self):
-        self.info("given the known plants (%s) and the current selected "\
+        self.debug("given the known plants (%s) and the current selected "\
                   "plant (%s) which of the found facades (%s) can be?"
                   %(knownPlants,self._plant.completeName,self._facadesFound))
         if self._plant.facadeInstanceName in self._facadesFound:
@@ -548,21 +661,21 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
 #        self.debug("Selection: BeamCurrent = %f"%(self.getBeamCurrent()))
 #        selection['beamCurrent'] = self.getBeamCurrent()
         
-        self.info("selection: %s"%(selection))
+        self.debug("selection: %s"%(selection))
         return selection
 
     def panel(self):
         return self._panel._ui
     
     def accepted(self):
-        self.info("Accepted call")
+        self.debug("Accepted call")
         if len(self._loopsFile) == 0 and len(self._diagFile) == 0:
             self.error("cannot accept without any file chosen!")
             return
         self.selectionDone.emit()
 
     def canceled(self):
-        self.info("Cancelling...")
+        self.debug("Cancelling...")
         self.closeApp.emit()
 
     def warningMsg(self,title,msg):
