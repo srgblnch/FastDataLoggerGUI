@@ -51,7 +51,7 @@ from FdlFileParser import LoopsFile,DiagnosticsFile
 from FdlSignals import SignalFields,y2
 from FdlFacadeManager import FacadeManager,FACADES_SERVERNAME
 from FdlSignalProcessor import SignalProcessor
-from FdlPlotter import Plotter,DecimationThreshold
+from FdlPlotter import Plotter
 
 class MainWindow(TaurusMainWindow,FdlLogger):
     def __init__(self, parent=None):
@@ -98,19 +98,18 @@ class MainWindow(TaurusMainWindow,FdlLogger):
     def prepareTimeAndDecimation(self):
         #start Value
         self.ui.timeAndDecimation._ui.startValue.setMinimum(0.0)
-        self.ui.timeAndDecimation._ui.startValue.setMaximum(411.0)
+        self.ui.timeAndDecimation._ui.startValue.setMaximum(419.43)
         self.ui.timeAndDecimation._ui.startValue.setSuffix(' ms')
         self.ui.timeAndDecimation._ui.startValue.setMinimumWidth(100)
         #endValue
         self.ui.timeAndDecimation._ui.endValue.setMinimum(0.0)
-        self.ui.timeAndDecimation._ui.endValue.setMaximum(411.0)
+        self.ui.timeAndDecimation._ui.endValue.setMaximum(419.43)
         self.ui.timeAndDecimation._ui.endValue.setSuffix(' ms')
-        self.ui.timeAndDecimation._ui.endValue.setValue(411.0)
+        self.ui.timeAndDecimation._ui.endValue.setValue(419.43)
         #decimation
         self.ui.timeAndDecimation._ui.decimationValue.setMinimum(1)
         self.ui.timeAndDecimation._ui.decimationValue.setMaximum(1000)
-        self.ui.timeAndDecimation._ui.decimationValue.\
-                                                  setValue(DecimationThreshold)
+        self.ui.timeAndDecimation._ui.decimationValue.setValue(1)
         #progress bar initial value
         self.updateProgressBar(100)
     
@@ -121,14 +120,13 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self.ui.cancelButton.hide()
         else:
             self.ui.cancelButton.show()
-        #self.ui.cancelButton.setEnabled(not enable)
-        self.ui.replotButton.setEnabled(enable)
         #progressBar
         self.enableProgressBar(not enable)
-        #configuration integers
-        #self.ui.timeAndDecimation._ui.startValue.setEnabled(enable)
-        #self.ui.timeAndDecimation._ui.endValue.setEnabled(enable)
-        #self.ui.timeAndDecimation._ui.decimationValue.setEnabled(enable)
+        #configuration integers and replot
+        self.ui.replotButton.setEnabled(enable)
+        self.ui.timeAndDecimation._ui.startValue.setEnabled(enable)
+        self.ui.timeAndDecimation._ui.endValue.setEnabled(enable)
+        self.ui.timeAndDecimation._ui.decimationValue.setEnabled(enable)
         
     def closeEvent(self,event):
         if (self._loopsParser != None and self._loopsParser.isProcessing())or\
@@ -388,7 +386,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self.callCarbageCollector()
         else:
             self._plotter = Plotter(self)
-            self.connectSignal(self._plotter,'swapping',self.itsSwapping)
+            #self.connectSignal(self._plotter,'swapping',self.itsSwapping)
             self.connectSignal(self._plotter,'onePlotted',self.onePlotted)
             self.connectSignal(self._plotter,'allPlotted',self.allPlotted)
         self.populatePlotter()
