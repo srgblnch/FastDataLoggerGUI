@@ -285,6 +285,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         self.ui.progressBar.setValue(100)
         self._enableWidgets(True)
     def showMessage(self,msg):
+        self.info("Print in the statusBar the message: '%s'"%(msg))
         self.statusBar().showMessage(msg)
     def parsingStatusMessage(self):
         if self._loopsParser != None and self._diagParser != None:

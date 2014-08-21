@@ -39,7 +39,6 @@ try:#normal way
     from taurus.external.qt import Qt,QtCore
 except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt
-    from FdlFileParser import MyQtSignal
 
 import threading
 import traceback

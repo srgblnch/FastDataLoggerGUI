@@ -35,7 +35,6 @@ try:#normal way
     from taurus.external.qt import Qt,QtGui,QtCore
 except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt,QtGui
-    from FdlFileParser import MyQtSignal
 from PyTango import DevFailed
 
 from FdlSignals import *
@@ -77,14 +76,14 @@ class FacadeManager(FdlLogger,Qt.QObject):
                               FACADES_SERVERNAME+'/'+\
                               facadeInstanceName)
             self.debug("Facade's device server name: %s"%(dServerName))
-            facadeDevName = taurus.Device(dServerName).\
-                                          QueryDevice()[0].split('::')[1]
+            dServer = taurus.Device(dServerName)
+            facadeDevName = dServer.QueryDevice()[0].split('::')[1]
             self.debug("Facade's device name: %s"%(facadeDevName))
             self.facadeDev = taurus.Device(facadeDevName)
         except Exception,e:
             self.error("Cannot prepare the facade information due to an "\
                        "exception: %s"%(e))
-            return
+            self.facadeDev = None
         self._prepareFacadeParams()
 
     @property
@@ -147,7 +146,7 @@ class FacadeManager(FdlLogger,Qt.QObject):
             self.warning("Not possible to read %s's value (%s)"%(attrName,msg))
         except Exception,e:
             self.error("Wasn't possible to get the facade's attribute %s: "\
-                                 "%s"%(attrName,e))
+                       "%s"%(attrName,e))
         return None
 
     def doFacadeAdjusments(self):

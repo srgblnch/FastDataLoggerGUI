@@ -36,7 +36,6 @@ try:#normal way
     from taurus.external.qt import Qt,QtGui,QtCore
 except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt,QtGui
-    from FdlFileParser import MyQtSignal
 
 from taurus.qt.qtgui.plot import CurveAppearanceProperties
 import numpy as np
@@ -77,7 +76,7 @@ class Plotter(FdlLogger,Qt.QWidget):
             Qt.QWidget.__init__(self)
             self.onePlotted._parent = self
             self.allPlotted._parent = self
-            self.swapping._parent = self
+            #self.swapping._parent = self
         self._parent = parent
         self.cleanSignals()
         self._buttonSignalsDone = False

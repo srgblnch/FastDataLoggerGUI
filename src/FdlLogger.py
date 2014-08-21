@@ -150,3 +150,47 @@ class FdlLogger(Logger,MemoryProfile):
                        "(gc counts %s, threshold %s) (load:%s)"
                        %(objSize,objUnit,procSize,procUnit,swapSize,swapUnit,
                          gcCounts,gcThreshold,load))
+
+####
+#--- Extra furniture for PyQt4.4 & numpy 1.3 backward compatibility
+try:#normal way
+    from taurus.external.qt import Qt,QtGui,QtCore
+except:#backward compatibility to pyqt 4.4.3
+    from taurus.qt import Qt,QtGui
+    class MyQtSignal(FdlLogger):
+        '''This class is made to emulate the pyqtSignals for too old pyqt versions.
+        '''
+        def __init__(self,name,parent=None):
+            FdlLogger.__init__(self)
+            self._parent = parent
+            self._name = name
+            self._cb = []
+        def emit(self):
+            self.debug("Signal %s emit (%s)"%(self._name,self._cb))
+            Qt.QObject.emit(self._parent,Qt.SIGNAL(self._name))
+        def connect(self,callback):
+            self.error("Trying a connect on MyQtSignal(%s)"%(self._name))
+            raise Exception("Invalid")
+            #self._cb.append(callback)
+
+from numpy.version import version as npversion
+if npversion.startswith('1.3'):
+    class nditer:#(FdlLogger):
+        '''This class is made to emulate np.nditer for too old numpy versions.
+        '''
+        def __init__(self,data):
+            self._data = data
+            self.iterindex = 0
+        @property
+        def itersize(self):
+            return len(self._data)
+        @property
+        def value(self):
+            return self._data[self.iterindex]
+        def next(self):
+            self.iterindex+=1
+            try:
+                return self._data[self.iterindex]
+            except:
+                raise StopIteration("Out of range")
+####
