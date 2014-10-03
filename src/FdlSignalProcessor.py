@@ -150,6 +150,9 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                    %(len(facadeFit),facadeFit))
         self.debug("Found %d signals to be calculated using a formula: %s"
                    %(len(withFormula),withFormula))
+        #TODO: before alert, check if there is a complete set of Loops or Diag
+        #      signals. In case of all Loops or Diag signals are orphan, it can
+        #      be assumed that there is no loading file from it.
         self.warning("Alert, found %d orphan signals: %s."
                      %(len(orphan),orphan))
         return {'ready':doneSignals,
@@ -196,7 +199,8 @@ class SignalProcessor(FdlLogger,Qt.QObject):
             else:
                 lastPendingSignals.pop(0)
                 lastPendingSignals.append(len(inputSignals))
-                self.debug("%d of the last loops in %s pending signal:"
+                #FIXME: this shall be debug
+                self.info("%d of the last loops in %s pending signal:"
                            %(len(lastPendingSignals),lastPendingSignals))
         if len(set(lastPendingSignals)) < 1:
             self.error("Process has NOT finished well! There are pending "\
@@ -231,7 +235,7 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                 beamCurrent = self._getFacadesBeamCurrent()
                 self._signals[signal] = eval(SignalFields[signal][formula],
                                    {'arcsin':np.arcsin,
-                                    'arctan':np.arctan,
+                                    'arctan':np.arctan2,
                                     'pi':np.pi,
                                     'BeamCurrent':beamCurrent},
                                    self._signals)
@@ -283,17 +287,23 @@ class SignalProcessor(FdlLogger,Qt.QObject):
         if self._isFileSignal(vbleName) and \
            self._isSignalInOurSet(vbleName):
             return True
+        if self._isFacadeFit(vbleName):
+            return True
     def _isFacadeFit(self,signal):
         return self._isLinear(signal) or self._isQuadratic(signal)
     def _isLinear(self,signal):
         if SignalFields[signal].has_key(vble) and \
-           self._isFileSignal(SignalFields[signal][vble]):
+           (self._isFileSignal(SignalFields[signal][vble]) or \
+            self._isFacadeFit(SignalFields[signal][vble])):
+           #Since it has been introduced dependencies between facade vbles
             return SignalFields[signal].has_key(slope) and \
                    SignalFields[signal].has_key(offset)
         return False
     def _isQuadratic(self,signal):
         if SignalFields[signal].has_key(vble) and \
-           self._isFileSignal(SignalFields[signal][vble]):
+           (self._isFileSignal(SignalFields[signal][vble]) or \
+            self._isFacadeFit(SignalFields[signal][vble])):
+           #Since it has been introduced dependencies between facade vbles
             return SignalFields[signal].has_key(couple) and \
                    SignalFields[signal].has_key(offset)
         return False

@@ -99,6 +99,8 @@ SignalFields = {}
 
 ####
 #--- Dictionary keywords:
+#TODO: change those constant names to upper case
+#      (an perhaps in between _*_ to tag them better)
 #pure file signal description fields and their amplitude components
 field='field'
 I = 'I'
@@ -209,7 +211,7 @@ newAmplitude('MO','MO_I','MO_Q')
 
 fittedSignal('CavVolt_mV',vbleName='CavVolt',slopeName='CAV_VOLT_m',
                                              offsetName='CAV_VOLT_n')
-fittedSignal('CavVolt_kV',vbleName='CavVolt',slopeName='CAV_VOLT_KV_m',
+fittedSignal('CavVolt_kV',vbleName='CavVolt_mV',slopeName='CAV_VOLT_KV_m',
                                              offsetName='CAV_VOLT_KV_n')
 fittedSignal('FwCav_kW',vbleName='FwCav',coupleName='CAV_FW_couple',
                                          offsetName='CAV_FW_offset')
@@ -218,19 +220,19 @@ fittedSignal('RvCav_kW',vbleName='RvCav',coupleName='CAV_RV_couple',
 
 
 
-formulaSignal('PDisCav_kW','(CavVolt_kV**2)/(10e6*2*3.3e8)',['CavVolt_kV'])
+#formula PDisCav_kW = (CavVolt_kV**2)/(10e6*2*3.3e8) was wrong
+formulaSignal('PDisCav_kW','((CavVolt_kV*1e3)**2)/(2*3.3*1e6)',['CavVolt_kV'])
 formulaSignal('FwLoad_kW','(FwLoad**2)/(1e8*10**-3.70092)+0.1667',['FwLoad'])
 formulaSignal('PBeam_kW','FwCav_kW-RvCav_kW-PDisCav_kW',
                          ['FwCav_kW','RvCav_kW','PDisCav_kW'])
 formulaSignal('BeamPhase',
               '180-arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV)*180/pi',
               ['PBeam_kW','CavVolt_kV'])
-formulaSignal('FwCav_Phase','arctan(FwCav_Q/FwCav_I)*180/pi+180',
+formulaSignal('FwCav_Phase','arctan(FwCav_Q,FwCav_I)*180/pi+180',
                             ['FwCav_Q','FwCav_I'])
                             #arctan(Q/I)*180/pi+180 
                             #if I>0 else 
                             #arctan(Q/I)*180/pi
-                            #FIXME: there is an IF statement here
 formulaSignal('Tuning_Dephase','Dephase-1024/512*360',['Dephase'])
                                #Dephase-1024/512*360 
                                #if Dephase > 512 else 
@@ -246,17 +248,15 @@ formulaSignal('Tuning_FwCavPhase','FwCavPhase-1024/512*360',['FwCavPhase'])
                                   #if FwCavPhase > 512 else 
                                   #FwCavPhase/512*360
                                   #FIXME: there is an IF statement here
-formulaSignal('FwLoad_Phase','arctan(FwLoad_Q/FwLoad_I)*180/pi+180',
+formulaSignal('FwLoad_Phase','arctan(FwLoad_Q,FwLoad_I)*180/pi+180',
                              ['FwLoad_Q','FwLoad_I'])
                              #arctan(FwLoad_Q/FwLoad_I*180/pi+180 
                              #if FwLoad_I < 0 else 
                              #arctan(FwLoad_Q/FwLoad_I*180/pi
-                             #FIXME: there is an IF statement here
-formulaSignal('MO_Phase','arctan(MO_Q/MO_I)*180/pi+180',['MO_Q','MO_I'])
+formulaSignal('MO_Phase','arctan(MO_Q,MO_I)*180/pi+180',['MO_Q','MO_I'])
                          #arctan(Q/I)*180/pi+180 
                          #if I<0 else 
                          #arctan(Q/I)*180/pi
-                         #FIXME: there is an IF statement here
 
 #--- Diag signals
 newSignal('SSA1Input_I','SSA1Input_I')
