@@ -102,7 +102,7 @@ class SignalProcessor(FdlLogger,Qt.QObject):
         categories = self._splitInCategories()
         self._signalsCalculated = 0
         self._signals2Calculate = \
-                           len(categories['facade'])+len(categories['formula'])
+                           len(categories['facade'])+len(categories[FORMULA_])
         if self._doCalculations(categories, 'facade'):
             self.debug("After facade calculations %d signals ready: %s"
                        %(len(categories['ready']),categories['ready']))
@@ -110,7 +110,7 @@ class SignalProcessor(FdlLogger,Qt.QObject):
             self.error("Aborting signal processing because facade fits "\
                        "cannot be satisfied")
             return False
-        if self._doCalculations(categories, 'formula'):
+        if self._doCalculations(categories, FORMULA_):
             self.debug("After formula calculations %d signals ready: %s"
                        %(len(categories['ready']),categories['ready']))
         else:
@@ -157,7 +157,7 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                      %(len(orphan),orphan))
         return {'ready':doneSignals,
                 'facade':facadeFit,
-                'formula':withFormula,
+                FORMULA_:withFormula,
                 'orphan':orphan}
     
     def _doCalculations(self,categories,inputTag):
@@ -209,10 +209,10 @@ class SignalProcessor(FdlLogger,Qt.QObject):
         return True
         
     def _takeDepenedencies(self,signalName):
-        if SignalFields[signalName].has_key(vble):
-            return [SignalFields[signalName][vble]]
-        elif SignalFields[signalName].has_key(depend):
-            return SignalFields[signalName][depend]
+        if SignalFields[signalName].has_key(VBLE_):
+            return [SignalFields[signalName][VBLE_]]
+        elif SignalFields[signalName].has_key(DEPEND_):
+            return SignalFields[signalName][DEPEND_]
         else:
             return []
 
@@ -222,18 +222,18 @@ class SignalProcessor(FdlLogger,Qt.QObject):
             self.info("Calculating linear fit on %s signal"%(signal))
             m,n = self._getFacadesMandNs(signal)
             self._signals[signal] = \
-                               (self._signals[SignalFields[signal][vble]]- n)/m
+                               (self._signals[SignalFields[signal][VBLE_]]- n)/m
         elif self._isQuadratic(signal):
             self.info("Calculating quadratic fit on %s signal"%(signal))
             c,o = self._getFacadesCandOs(signal)
             self._signals[signal] = \
-                    (self._signals[SignalFields[signal][vble]]**2/10e8/10**c)-o
+                    (self._signals[SignalFields[signal][VBLE_]]**2/10e8/10**c)-o
         elif self._isFormula(signal):
             self.info("Calculating %s using formula '%s'"
-                      %(signal,SignalFields[signal][formula]))
+                      %(signal,SignalFields[signal][FORMULA_]))
             try:
                 beamCurrent = self._getFacadesBeamCurrent()
-                self._signals[signal] = eval(SignalFields[signal][formula],
+                self._signals[signal] = eval(SignalFields[signal][FORMULA_],
                                    {'arcsin':np.arcsin,
                                     'arctan':np.arctan2,
                                     'pi':np.pi,
@@ -276,14 +276,14 @@ class SignalProcessor(FdlLogger,Qt.QObject):
     def _isFileSignal(self,signal):
         if not self._isSignalInOurSet(signal):
             return False
-        hasFieldField = SignalFields[signal].has_key(field)
-        hasI = SignalFields[signal].has_key(I)
-        hasQ = SignalFields[signal].has_key(Q)
+        hasFieldField = SignalFields[signal].has_key(FIELD_)
+        hasI = SignalFields[signal].has_key(I_)
+        hasQ = SignalFields[signal].has_key(Q_)
         return hasFieldField or (hasI and hasQ)
     def _isSignalInOurSet(self,signal):
         return signal in self._signals.keys()
     def _isVbleInOurSet(self,signal):
-        vbleName = SignalFields[signal][vble]
+        vbleName = SignalFields[signal][VBLE_]
         if self._isFileSignal(vbleName) and \
            self._isSignalInOurSet(vbleName):
             return True
@@ -292,25 +292,25 @@ class SignalProcessor(FdlLogger,Qt.QObject):
     def _isFacadeFit(self,signal):
         return self._isLinear(signal) or self._isQuadratic(signal)
     def _isLinear(self,signal):
-        if SignalFields[signal].has_key(vble) and \
-           (self._isFileSignal(SignalFields[signal][vble]) or \
-            self._isFacadeFit(SignalFields[signal][vble])):
+        if SignalFields[signal].has_key(VBLE_) and \
+           (self._isFileSignal(SignalFields[signal][VBLE_]) or \
+            self._isFacadeFit(SignalFields[signal][VBLE_])):
            #Since it has been introduced dependencies between facade vbles
-            return SignalFields[signal].has_key(slope) and \
-                   SignalFields[signal].has_key(offset)
+            return SignalFields[signal].has_key(SLOPE_) and \
+                   SignalFields[signal].has_key(OFFSET_)
         return False
     def _isQuadratic(self,signal):
-        if SignalFields[signal].has_key(vble) and \
-           (self._isFileSignal(SignalFields[signal][vble]) or \
-            self._isFacadeFit(SignalFields[signal][vble])):
+        if SignalFields[signal].has_key(VBLE_) and \
+           (self._isFileSignal(SignalFields[signal][VBLE_]) or \
+            self._isFacadeFit(SignalFields[signal][VBLE_])):
            #Since it has been introduced dependencies between facade vbles
-            return SignalFields[signal].has_key(couple) and \
-                   SignalFields[signal].has_key(offset)
+            return SignalFields[signal].has_key(COUPLE_) and \
+                   SignalFields[signal].has_key(OFFSET_)
         return False
     def _isFormula(self,signal):
-        if SignalFields[signal].has_key(formula):
+        if SignalFields[signal].has_key(FORMULA_):
             #if any of the dependencies is NOT facade fit
-            signalDependencies = copy(SignalFields[signal][depend])
+            signalDependencies = copy(SignalFields[signal][DEPEND_])
             for i,aDependency in enumerate(signalDependencies):
                 #FIXME: this is risky without a nesting control
                 if self._isFormula(aDependency) or \

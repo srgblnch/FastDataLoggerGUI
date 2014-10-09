@@ -59,18 +59,22 @@ class FacadeManager(FdlLogger,Qt.QObject):
         self._beamCurrent = beamCurrent#mA
         self._facadeAttrWidgets = \
             {'CavVolt_mV':
-                {slope: self._facadeAdjustments._ui.cavityVolts_mV_MValue,
-                 offset:self._facadeAdjustments._ui.cavityVolts_mV_NValue},
+                {SLOPE_: self._facadeAdjustments._ui.cavityVolts_mV_MValue,
+                 OFFSET_:self._facadeAdjustments._ui.cavityVolts_mV_NValue},
              'CavVolt_kV':
-                {slope: self._facadeAdjustments._ui.cavityVolts_kV_MValue,
-                 offset:self._facadeAdjustments._ui.cavityVolts_kV_NValue},
+                {SLOPE_: self._facadeAdjustments._ui.cavityVolts_kV_MValue,
+                 OFFSET_:self._facadeAdjustments._ui.cavityVolts_kV_NValue},
              'FwCav_kW':
-                {couple:self._facadeAdjustments._ui.FwCavCValue,
-                 offset:self._facadeAdjustments._ui.FwCavOValue},
+                {COUPLE_:self._facadeAdjustments._ui.FwCavCValue,
+                 OFFSET_:self._facadeAdjustments._ui.FwCavOValue},
              'RvCav_kW':
-                {couple:self._facadeAdjustments._ui.RvCavCValue,
-                 offset:self._facadeAdjustments._ui.RvCavOValue}
+                {COUPLE_:self._facadeAdjustments._ui.RvCavCValue,
+                 OFFSET_:self._facadeAdjustments._ui.RvCavOValue},
+             'FwLoad_kW':
+                {COUPLE_:self._facadeAdjustments._ui.FwLoadCValue,
+                 OFFSET_:self._facadeAdjustments._ui.FwLoadOValue},
             }
+        self._prepareFacadeWidgets()
         try:
             dServerName = str('dserver/'+\
                               FACADES_SERVERNAME+'/'+\
@@ -90,47 +94,59 @@ class FacadeManager(FdlLogger,Qt.QObject):
     def instanceName(self):
         return self._facadeInstanceName
 
+    def _prepareFacadeWidgets(self):
+        for element in self._facadeAttrWidgets.keys():
+            for parameter in [SLOPE_,COUPLE_,OFFSET_]:
+                try:
+                    if self._facadeAttrWidgets[element].has_key(parameter):
+                        widget = self._facadeAttrWidgets[element][parameter]
+                        widget.setRange(-100,100)
+                except Exception,e:
+                    print("\n"*10)
+                    self.error("Exception %s"%(e))
+                    print("\n"*10)
+
     def _prepareFacadeParams(self):
         self._fromFacade = {}
         for field in SignalFields.keys():
             self._fromFacade[field] = {}
             #FIXME: these ifs needs a refactoring
-            if SignalFields[field].has_key(slope) and \
-               SignalFields[field].has_key(offset):
-                self._fromFacade[field][slope] = 1
-                self._fromFacade[field][offset] = 0
-            elif SignalFields[field].has_key(couple) and \
-                 SignalFields[field].has_key(offset):
-                self._fromFacade[field][couple] = 1
-                self._fromFacade[field][offset] = 0
+            if SignalFields[field].has_key(SLOPE_) and \
+               SignalFields[field].has_key(OFFSET_):
+                self._fromFacade[field][SLOPE_] = 1
+                self._fromFacade[field][OFFSET_] = 0
+            elif SignalFields[field].has_key(COUPLE_) and \
+                 SignalFields[field].has_key(OFFSET_):
+                self._fromFacade[field][COUPLE_] = 1
+                self._fromFacade[field][OFFSET_] = 0
             #TODO: quadratics
 
     def populateFacadeParams(self):
         requiresFacadeAdjustments = False
         for field in SignalFields.keys():
             #FIXME: these ifs needs a refactoring
-            if SignalFields[field].has_key(slope) and \
-               SignalFields[field].has_key(offset):
-                mAttr = SignalFields[field][slope]
-                nAttr = SignalFields[field][offset]
+            if SignalFields[field].has_key(SLOPE_) and \
+               SignalFields[field].has_key(OFFSET_):
+                mAttr = SignalFields[field][SLOPE_]
+                nAttr = SignalFields[field][OFFSET_]
                 m = self.readAttr(mAttr)
                 n = self.readAttr(nAttr)
                 if m != None and n != None:
                     self.info("For signal %s: m = %g, n = %g"%(field,m,n))
-                    self._fromFacade[field][slope] = m
-                    self._fromFacade[field][offset] = n
+                    self._fromFacade[field][SLOPE_] = m
+                    self._fromFacade[field][OFFSET_] = n
                 else:
                     requiresFacadeAdjustments = True
-            elif SignalFields[field].has_key(couple) and \
-                 SignalFields[field].has_key(offset):
-                cAttr = SignalFields[field][couple]
-                oAttr = SignalFields[field][offset]
+            elif SignalFields[field].has_key(COUPLE_) and \
+                 SignalFields[field].has_key(OFFSET_):
+                cAttr = SignalFields[field][COUPLE_]
+                oAttr = SignalFields[field][OFFSET_]
                 c = self.readAttr(cAttr)
                 o = self.readAttr(oAttr)
                 if c != None and o != None:
                     self.info("For signal %s: c = %g, o = %g"%(field,c,o))
-                    self._fromFacade[field][couple] = c
-                    self._fromFacade[field][offset] = o
+                    self._fromFacade[field][COUPLE_] = c
+                    self._fromFacade[field][OFFSET_] = o
                 else:
                     requiresFacadeAdjustments = True
         return requiresFacadeAdjustments
@@ -161,24 +177,24 @@ class FacadeManager(FdlLogger,Qt.QObject):
         #use _fromFacade to populate widgets
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
-            if self._fromFacade[field].has_key(slope) and \
-               self._fromFacade[field].has_key(offset):
-                m = self._fromFacade[field][slope]
-                n = self._fromFacade[field][offset]
+            if self._fromFacade[field].has_key(SLOPE_) and \
+               self._fromFacade[field].has_key(OFFSET_):
+                m = self._fromFacade[field][SLOPE_]
+                n = self._fromFacade[field][OFFSET_]
                 self.debug("Information to the user, signal %s: m = %g, n = %g"
                            %(field,m,n))
                 if self._facadeAttrWidgets.has_key(field):
-                    self._facadeAttrWidgets[field][slope].setValue(m)
-                    self._facadeAttrWidgets[field][offset].setValue(n)
-            if self._fromFacade[field].has_key(couple) and \
-               self._fromFacade[field].has_key(offset):
-                c = self._fromFacade[field][couple]
-                o = self._fromFacade[field][offset]
+                    self._facadeAttrWidgets[field][SLOPE_].setValue(m)
+                    self._facadeAttrWidgets[field][OFFSET_].setValue(n)
+            if self._fromFacade[field].has_key(COUPLE_) and \
+               self._fromFacade[field].has_key(OFFSET_):
+                c = self._fromFacade[field][COUPLE_]
+                o = self._fromFacade[field][OFFSET_]
                 self.debug("Information to the user, signal %s: c = %g, o = %g"
                            %(field,c,o))
                 if self._facadeAttrWidgets.has_key(field):
-                    self._facadeAttrWidgets[field][couple].setValue(c)
-                    self._facadeAttrWidgets[field][offset].setValue(o)
+                    self._facadeAttrWidgets[field][COUPLE_].setValue(c)
+                    self._facadeAttrWidgets[field][OFFSET_].setValue(o)
         self._facadeAdjustments.show()
     
 #    def prepareBeamCurrent(self):
@@ -202,27 +218,27 @@ class FacadeManager(FdlLogger,Qt.QObject):
         hasAnyoneChanged = False
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
-            if self._fromFacade[field].has_key(slope) and \
-               self._fromFacade[field].has_key(offset):
-                m = float(self._facadeAttrWidgets[field][slope].value())
-                n = float(self._facadeAttrWidgets[field][offset].value())
-                if self._fromFacade[field][slope] != m or \
-                   self._fromFacade[field][offset] != n:
+            if self._fromFacade[field].has_key(SLOPE_) and \
+               self._fromFacade[field].has_key(OFFSET_):
+                m = float(self._facadeAttrWidgets[field][SLOPE_].value())
+                n = float(self._facadeAttrWidgets[field][OFFSET_].value())
+                if self._fromFacade[field][SLOPE_] != m or \
+                   self._fromFacade[field][OFFSET_] != n:
                     self.info("Changes from the user, signal %s: m = %g, n = %g"
                               %(field,m,n))
-                    self._fromFacade[field][slope] = m
-                    self._fromFacade[field][offset] = n
+                    self._fromFacade[field][SLOPE_] = m
+                    self._fromFacade[field][OFFSET_] = n
                     hasAnyoneChanged = True
-            elif self._fromFacade[field].has_key(couple) and \
-                 self._fromFacade[field].has_key(offset):
-                c = float(self._facadeAttrWidgets[field][couple].value())
-                o = float(self._facadeAttrWidgets[field][offset].value())
-                if self._fromFacade[field][couple] != c or \
-                   self._fromFacade[field][offset] != o:
+            elif self._fromFacade[field].has_key(COUPLE_) and \
+                 self._fromFacade[field].has_key(OFFSET_):
+                c = float(self._facadeAttrWidgets[field][COUPLE_].value())
+                o = float(self._facadeAttrWidgets[field][OFFSET_].value())
+                if self._fromFacade[field][COUPLE_] != c or \
+                   self._fromFacade[field][OFFSET_] != o:
                     self.info("Changes from the user, signal %s: c = %g, o = %g"
                               %(field,c,o))
-                    self._fromFacade[field][couple] = c
-                    self._fromFacade[field][offset] = o
+                    self._fromFacade[field][COUPLE_] = c
+                    self._fromFacade[field][OFFSET_] = o
                     hasAnyoneChanged = True
         if hasAnyoneChanged:
             self.updated.emit()
@@ -240,20 +256,20 @@ class FacadeManager(FdlLogger,Qt.QObject):
     def getMandNs(self,signalName):
         if signalName in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
-            if self._fromFacade[signalName].has_key(slope) and \
-               self._fromFacade[signalName].has_key(offset):
-                return (self._fromFacade[signalName][slope],
-                        self._fromFacade[signalName][offset])
+            if self._fromFacade[signalName].has_key(SLOPE_) and \
+               self._fromFacade[signalName].has_key(OFFSET_):
+                return (self._fromFacade[signalName][SLOPE_],
+                        self._fromFacade[signalName][OFFSET_])
         else:
             raise Exception("signal %s hasn't M&N's"%(signalName))
 
     def getCandOs(self,signalName):
         if signalName in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
-            if self._fromFacade[signalName].has_key(couple) and \
-               self._fromFacade[signalName].has_key(offset):
-                return (self._fromFacade[signalName][couple],
-                        self._fromFacade[signalName][offset])
+            if self._fromFacade[signalName].has_key(COUPLE_) and \
+               self._fromFacade[signalName].has_key(OFFSET_):
+                return (self._fromFacade[signalName][COUPLE_],
+                        self._fromFacade[signalName][OFFSET_])
         else:
             return (None,None)#FIXME
         

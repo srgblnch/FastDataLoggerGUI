@@ -48,7 +48,7 @@ from taurus.qt.qtgui.resource import getThemeIcon
 from ui_MainView import Ui_FastDataLoggerDLLRF
 from fileloader import fileLoader
 from FdlFileParser import LoopsFile,DiagnosticsFile
-from FdlSignals import SignalFields,y2
+from FdlSignals import SignalFields,Y2_
 from FdlFacadeManager import FacadeManager,FACADES_SERVERNAME
 from FdlSignalProcessor import SignalProcessor
 from FdlPlotter import Plotter
@@ -88,12 +88,27 @@ class MainWindow(TaurusMainWindow,FdlLogger):
                                          'Open Files...',self)
         Qt.QObject.connect(self.loadFileAction, Qt.SIGNAL("triggered()"),
                            self.loadFile)
-        self.fileMenu.addAction(self.loadFileAction)#TODO: sort this menu
+        #add the action before the first of the actions already existing
+        try:
+            before = self.fileMenu.actions()[0]
+            self.fileMenu.insertAction(before,self.loadFileAction)
+            self.fileMenu.insertAction(before,self.fileMenu.addSeparator())
+        except Exception,e:
+            self.fileMenu.addAction(self.loadFileAction)
+            self.error("The 'Open Files...' action cannot be inserted as "\
+                       "the first element of the 'File' menu")
         self._enableWidgets(True)
         #adjustments on the facade configuration
         self.facadeAction = Qt.QAction('Facade fits',self)
         self.facadeAction.setEnabled(False)
-        self.toolsMenu.addAction(self.facadeAction)
+        try:
+            before = self.toolsMenu.actions()[0]
+            self.toolsMenu.insertAction(before,self.facadeAction)
+            self.toolsMenu.insertAction(before,self.toolsMenu.addSeparator())
+        except Exception,e:
+            self.error("The 'Facade fits' action cannot be inserted as "\
+                       "the first element of the 'Tools' menu")
+            self.toolsMenu.addAction(self.facadeAction)
     
     def prepareTimeAndDecimation(self):
         #start Value

@@ -46,7 +46,9 @@ except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt,QtGui,QtCore,Qwt5
 
 SEPARATOR = 0x7FFF
-LOAD_ERROR_RATE = 0.01
+LOAD_ERROR_RATE = 0.01 # as a %
+#in 128MB file there are ~67e6 samples, and this (unused) threshold 
+#means 6e3 errors in a single file.
 
 class FdlFile(FdlLogger,Qt.QObject):
     try:#normal way
@@ -128,18 +130,18 @@ class FdlFile(FdlLogger,Qt.QObject):
            FDL file (Loops|Diag).
         '''
         return SignalFields.has_key(name) and \
-               SignalFields[name].has_key(field) and \
-               SignalFields[name][field] in self._fields.keys()
+               SignalFields[name].has_key(FIELD_) and \
+               SignalFields[name][FIELD_] in self._fields.keys()
 
     def hasIandQ(self,name):
         '''Check if the given name has a pair of items in the SignalFields 
            dictionary describing I&Q to calculate an amplitude from Is&Qs 
            collected on this FDL file type (Loops|Diag).
         '''
-        hasI = SignalFields[name].has_key(I) and \
-               self._signals.has_key(SignalFields[name][I])
-        hasQ = SignalFields[name].has_key(Q) and \
-               self._signals.has_key(SignalFields[name][Q])
+        hasI = SignalFields[name].has_key(I_) and \
+               self._signals.has_key(SignalFields[name][I_])
+        hasQ = SignalFields[name].has_key(Q_) and \
+               self._signals.has_key(SignalFields[name][Q_])
         #self.debug("signal %s hasI=%s and hasQ=%s"%(name,hasI,hasQ))
         return hasI and hasQ
 
@@ -234,9 +236,12 @@ class FdlFile(FdlLogger,Qt.QObject):
         
     def processSignalSet(self):
         for keyName in self._signals.keys():
-            fieldName = SignalFields[keyName][field]
+            fieldName = SignalFields[keyName][FIELD_]
             value = self._values[self._iterator.iterindex+self._fields[fieldName]]
-            self._signals[keyName].append(float(value)/32767*1000)
+            value = float(value)/32767*1000
+            if SignalFields[keyName].has_key(TWOCOMPLEMENT_):
+                if value > 512: value -= 1024
+            self._signals[keyName].append(value)
     #--- done processing area
     ####
     
@@ -261,9 +266,9 @@ class FdlFile(FdlLogger,Qt.QObject):
         #check the signal descriptors that have an amplitude conversion
         for keyName in SignalFields.keys():
             if self.hasIandQ(keyName):
-                Itag = SignalFields[keyName][I]
+                Itag = SignalFields[keyName][I_]
                 Isignal = self._signals[Itag]
-                Qtag = SignalFields[keyName][Q]
+                Qtag = SignalFields[keyName][Q_]
                 Qsignal = self._signals[Qtag]
                 self.info("Signal %s has I (%s) and Q (%s)"%(keyName,Itag,Qtag))
                 self._signals[keyName] = np.sqrt((Isignal**2)+(Qsignal**2))

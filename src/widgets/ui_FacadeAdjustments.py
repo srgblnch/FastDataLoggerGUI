@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/FacadeAdjustments.ui'
 #
-# Created: Wed Jul 30 11:22:02 2014
+# Created: Mon Sep 29 14:03:57 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -17,21 +17,21 @@ except AttributeError:
 class Ui_facadeAdjustments(object):
     def setupUi(self, facadeAdjustments):
         facadeAdjustments.setObjectName(_fromUtf8("facadeAdjustments"))
-        facadeAdjustments.resize(343, 453)
+        facadeAdjustments.resize(350, 500)
         self.gridLayout_4 = QtGui.QGridLayout(facadeAdjustments)
         self.gridLayout_4.setObjectName(_fromUtf8("gridLayout_4"))
         self.scrollArea = QtGui.QScrollArea(facadeAdjustments)
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName(_fromUtf8("scrollArea"))
         self.scrollAreaWidgetContents = QtGui.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 329, 439))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 336, 486))
         self.scrollAreaWidgetContents.setObjectName(_fromUtf8("scrollAreaWidgetContents"))
         self.gridLayout = QtGui.QGridLayout(self.scrollAreaWidgetContents)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.buttonBox = QtGui.QDialogButtonBox(self.scrollAreaWidgetContents)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName(_fromUtf8("buttonBox"))
-        self.gridLayout.addWidget(self.buttonBox, 4, 0, 1, 1)
+        self.gridLayout.addWidget(self.buttonBox, 5, 0, 1, 1)
         self.cavityVolts_kV = QtGui.QGroupBox(self.scrollAreaWidgetContents)
         self.cavityVolts_kV.setObjectName(_fromUtf8("cavityVolts_kV"))
         self.gridLayout_5 = QtGui.QGridLayout(self.cavityVolts_kV)
@@ -156,6 +156,37 @@ class Ui_facadeAdjustments(object):
         self.RvCavFormula.setObjectName(_fromUtf8("RvCavFormula"))
         self.gridLayout_7.addWidget(self.RvCavFormula, 0, 1, 1, 5)
         self.gridLayout.addWidget(self.RvCav, 3, 0, 1, 1)
+        self.FwLoad = QtGui.QGroupBox(self.scrollAreaWidgetContents)
+        self.FwLoad.setObjectName(_fromUtf8("FwLoad"))
+        self.gridLayout_8 = QtGui.QGridLayout(self.FwLoad)
+        self.gridLayout_8.setObjectName(_fromUtf8("gridLayout_8"))
+        spacerItem12 = QtGui.QSpacerItem(22, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_8.addItem(spacerItem12, 1, 3, 1, 1)
+        self.FwLoadCLabel = QtGui.QLabel(self.FwLoad)
+        self.FwLoadCLabel.setObjectName(_fromUtf8("FwLoadCLabel"))
+        self.gridLayout_8.addWidget(self.FwLoadCLabel, 1, 1, 1, 1)
+        self.FwLoadCValue = QtGui.QDoubleSpinBox(self.FwLoad)
+        self.FwLoadCValue.setDecimals(4)
+        self.FwLoadCValue.setSingleStep(0.0001)
+        self.FwLoadCValue.setObjectName(_fromUtf8("FwLoadCValue"))
+        self.gridLayout_8.addWidget(self.FwLoadCValue, 1, 2, 1, 1)
+        spacerItem13 = QtGui.QSpacerItem(21, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_8.addItem(spacerItem13, 1, 0, 1, 1)
+        self.FwLoadOLabel = QtGui.QLabel(self.FwLoad)
+        self.FwLoadOLabel.setObjectName(_fromUtf8("FwLoadOLabel"))
+        self.gridLayout_8.addWidget(self.FwLoadOLabel, 1, 4, 1, 1)
+        spacerItem14 = QtGui.QSpacerItem(21, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_8.addItem(spacerItem14, 1, 6, 1, 1)
+        self.FwLoadOValue = QtGui.QDoubleSpinBox(self.FwLoad)
+        self.FwLoadOValue.setDecimals(4)
+        self.FwLoadOValue.setSingleStep(0.0001)
+        self.FwLoadOValue.setObjectName(_fromUtf8("FwLoadOValue"))
+        self.gridLayout_8.addWidget(self.FwLoadOValue, 1, 5, 1, 1)
+        self.FwLoadFormula = QtGui.QLabel(self.FwLoad)
+        self.FwLoadFormula.setAlignment(QtCore.Qt.AlignCenter)
+        self.FwLoadFormula.setObjectName(_fromUtf8("FwLoadFormula"))
+        self.gridLayout_8.addWidget(self.FwLoadFormula, 0, 1, 1, 5)
+        self.gridLayout.addWidget(self.FwLoad, 4, 0, 1, 1)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.gridLayout_4.addWidget(self.scrollArea, 0, 0, 1, 1)
 
@@ -182,5 +213,9 @@ class Ui_facadeAdjustments(object):
         self.RvCavCLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "couple", None, QtGui.QApplication.UnicodeUTF8))
         self.RvCavOLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "offset", None, QtGui.QApplication.UnicodeUTF8))
         self.RvCavFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y = x^2/10e8/10^c-o", None, QtGui.QApplication.UnicodeUTF8))
+        self.FwLoad.setTitle(QtGui.QApplication.translate("facadeAdjustments", "FwLoad [kW]", None, QtGui.QApplication.UnicodeUTF8))
+        self.FwLoadCLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "couple", None, QtGui.QApplication.UnicodeUTF8))
+        self.FwLoadOLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "offset", None, QtGui.QApplication.UnicodeUTF8))
+        self.FwLoadFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y = x^2/10e8/10^c-o", None, QtGui.QApplication.UnicodeUTF8))
 
 from taurus.qt.qtgui.panel import TaurusWidget

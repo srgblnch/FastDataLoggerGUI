@@ -41,12 +41,12 @@
     - signals with 'x' and c&o keys (couple and offset): 
         - calculate x**2/10e8/10**(c)+o where 'x' is another signal and c&o 
             facades attr names this calculation will be made in the gui
-    - signals with 'f', 'h' and 'd':
-        - calculate using a formula with other fields, and left the result 
-            in 'h'. It also has a dependency list with a list of other keys 
-            it need to correctly do its own calculation.
-    - signals with 'gui' key: its items describes locations ('tab','plot' and 
-        'y' axis) and colour to plot  this signal in the interface.
+    - signals with FORMULA_, and DEPEND_:
+        - calculate using a formula with other fields. It also has a 
+            dependency list with a list of other keys it need to correctly 
+            do its own calculation.
+    - signals with GUI_' key: its items describes locations (TAB_,PLOT_ and 
+        'y' axis) and colour to plot this signal in the interface.
     Even this module doesn't know about the gui, this last key has been set up
     here in order to have a single point key naming to know where to modify if
     user request any change.
@@ -102,42 +102,45 @@ SignalFields = {}
 #TODO: change those constant names to upper case
 #      (an perhaps in between _*_ to tag them better)
 #pure file signal description fields and their amplitude components
-field='field'
-I = 'I'
-Q = 'Q'
+FIELD_='field'
+I_ = 'I'
+Q_ = 'Q'
+TWOCOMPLEMENT_ = 'twoComplement'
 #signals with linear of quadratic fits using facade's attrs
-vble = 'x'
-slope = 'm'
-offset = 'n'
-couple = 'c'
+VBLE_ = 'x'
+SLOPE_ = 'm'
+OFFSET_ = 'n'
+COUPLE_ = 'c'
 #formula evaluation signals
-formula = 'f'
-depend = 'd'
+FORMULA_ = 'f'
+DEPEND_ = 'd'
 #descriptions for the graphical interface
-gui = 'gui'
-tab = 'tab'
-plot = 'plot'
-axis = 'axis'
-color='color'
+GUI_ = 'gui'
+TAB_ = 'tab'
+PLOT_ = 'plot'
+AXIS_ = 'axis'
+COLOR_='color'
 #allowed strings: 'Black','Red','Blue','Magenta','Green','Cyan','Yellow'
-y1 = Qwt5.QwtPlot.Axis(0)
-y2 = Qwt5.QwtPlot.Axis(1)
+Y1_ = Qwt5.QwtPlot.Axis(0)
+Y2_ = Qwt5.QwtPlot.Axis(1)
 #--- done dictionary keywords
 ####
 
-def newSignal(name,fieldName):
+def newSignal(name,fieldName,twoComplement=None):
     if SignalFields.has_key(name):
         raise Exception("key %s already exist!"%(name))
     SignalFields[name] = {}
-    SignalFields[name][field] = fieldName
+    SignalFields[name][FIELD_] = fieldName
+    if twoComplement:
+        SignalFields[name][TWOCOMPLEMENT_] = True
 
 def newAmplitude(name,Iname,Qname):
     if SignalFields.has_key(name):
         raise Exception("key %s already exist!"%(name))
     SignalFields[name] = {}
-    SignalFields[name][I] = Iname
-    SignalFields[name][Q] = Qname
-    
+    SignalFields[name][I_] = Iname
+    SignalFields[name][Q_] = Qname
+
 def fittedSignal(name,vbleName,slopeName=None,coupleName=None,offsetName=None):
     if SignalFields.has_key(name):
         raise Exception("key %s already exist!"%(name))
@@ -146,30 +149,30 @@ def fittedSignal(name,vbleName,slopeName=None,coupleName=None,offsetName=None):
         raise Exception("fitted signal %s requires a slope or a couple! "\
                         "(exclusive or)"%(name))
     SignalFields[name] = {}
-    SignalFields[name][vble] = vbleName
+    SignalFields[name][VBLE_] = vbleName
     if slopeName != None:
-        SignalFields[name][slope] = slopeName
+        SignalFields[name][SLOPE_] = slopeName
     elif coupleName != None:
-        SignalFields[name][couple] = coupleName
-    SignalFields[name][offset] = offsetName
+        SignalFields[name][COUPLE_] = coupleName
+    SignalFields[name][OFFSET_] = offsetName
 
 def formulaSignal(name,itsFormula,dependencies):
     if SignalFields.has_key(name):
         raise Exception("key %s already exist!"%(name))
     SignalFields[name] = {}
-    SignalFields[name][formula] = itsFormula
-    SignalFields[name][depend] = dependencies
+    SignalFields[name][FORMULA_] = itsFormula
+    SignalFields[name][DEPEND_] = dependencies
 
 def add2gui(name,destTab,destPlot,destAxis,plotColor):
     if not SignalFields.has_key(name):
         raise Exception("key %s doesn't exist"%(name))
-    if SignalFields[name].has_key(gui):
+    if SignalFields[name].has_key(GUI_):
         raise Exception("key %s already configured for the gui"%(name))
-    SignalFields[name][gui] = {}
-    SignalFields[name][gui][tab] = destTab
-    SignalFields[name][gui][plot] = destPlot
-    SignalFields[name][gui][axis] = destAxis
-    SignalFields[name][gui][color] = plotColor
+    SignalFields[name][GUI_] = {}
+    SignalFields[name][GUI_][TAB_] = destTab
+    SignalFields[name][GUI_][PLOT_] = destPlot
+    SignalFields[name][GUI_][AXIS_] = destAxis
+    SignalFields[name][GUI_][COLOR_] = plotColor
 
 #--- Loops signals
 newSignal('CavVolt_I','Cav_I')
@@ -183,16 +186,16 @@ newSignal('RvCav_Q','RvCav_Q')
 newAmplitude('RvCav','RvCav_I','RvCav_Q')
 newSignal('Control_I','Control_I')
 newSignal('Control_Q','Control_Q')
-newAmplitude('Control','Control_I','Control_Q')
+#newAmplitude('Control','Control_I','Control_Q')
 newSignal('Error_I','Error_I')
 newSignal('Error_Q','Error_Q')
 newAmplitude('Error','Error_I','Error_Q')
 newSignal('ErroAccum_I','ErroAccum_I')
 newSignal('ErroAccum_Q','ErroAccum_Q')
 newAmplitude('ErroAccum','ErroAccum_I','ErroAccum_Q')
-newSignal('Dephase','TuningDephase')
-newSignal('CavPhase','CavityPhase')
-newSignal('FwCavPhase','FwCavPhase')
+newSignal('Dephase','TuningDephase',twoComplement=True)
+newSignal('CavPhase','CavityPhase',twoComplement=True)
+newSignal('FwCavPhase','FwCavPhase',twoComplement=True)
 newSignal('FwIOT1_I','FwIOT1_I')
 newSignal('FwIOT1_Q','FwIOT1_Q')
 newAmplitude('FwIOT1','FwIOT1_I','FwIOT1_Q')
@@ -217,12 +220,11 @@ fittedSignal('FwCav_kW',vbleName='FwCav',coupleName='CAV_FW_couple',
                                          offsetName='CAV_FW_offset')
 fittedSignal('RvCav_kW',vbleName='RvCav',coupleName='CAV_RV_couple',
                                          offsetName='CAV_RV_offset')
-
-
+fittedSignal('FwLoad_kW',vbleName='FwLoad',coupleName='LOAD_FW_couple',
+                                           offsetName='LOAD_FW_offset')
 
 #formula PDisCav_kW = (CavVolt_kV**2)/(10e6*2*3.3e8) was wrong
 formulaSignal('PDisCav_kW','((CavVolt_kV*1e3)**2)/(2*3.3*1e6)',['CavVolt_kV'])
-formulaSignal('FwLoad_kW','(FwLoad**2)/(1e8*10**-3.70092)+0.1667',['FwLoad'])
 formulaSignal('PBeam_kW','FwCav_kW-RvCav_kW-PDisCav_kW',
                          ['FwCav_kW','RvCav_kW','PDisCav_kW'])
 formulaSignal('BeamPhase',
@@ -233,21 +235,6 @@ formulaSignal('FwCav_Phase','arctan(FwCav_Q,FwCav_I)*180/pi+180',
                             #arctan(Q/I)*180/pi+180 
                             #if I>0 else 
                             #arctan(Q/I)*180/pi
-formulaSignal('Tuning_Dephase','Dephase-1024/512*360',['Dephase'])
-                               #Dephase-1024/512*360 
-                               #if Dephase > 512 else 
-                               #Dephase/512*360
-                               #FIXME: there is an IF statement here
-formulaSignal('Tuning_CavPhase','CavPhase-1024/512*360',['CavPhase'])
-                                #CavPhase-1024/512*360 
-                                #if CavPhase > 512 else 
-                                #CavPhase/512*360
-                                #FIXME: there is an IF statement here
-formulaSignal('Tuning_FwCavPhase','FwCavPhase-1024/512*360',['FwCavPhase'])
-                                  #FwCavPhase-1024/512*360 
-                                  #if FwCavPhase > 512 else 
-                                  #FwCavPhase/512*360
-                                  #FIXME: there is an IF statement here
 formulaSignal('FwLoad_Phase','arctan(FwLoad_Q,FwLoad_I)*180/pi+180',
                              ['FwLoad_Q','FwLoad_I'])
                              #arctan(FwLoad_Q/FwLoad_I*180/pi+180 
@@ -257,6 +244,28 @@ formulaSignal('MO_Phase','arctan(MO_Q,MO_I)*180/pi+180',['MO_Q','MO_I'])
                          #arctan(Q/I)*180/pi+180 
                          #if I<0 else 
                          #arctan(Q/I)*180/pi
+
+## There is a set of formula signals in the documentation that responds to:
+#   if Dephase > 512:
+#       Dephase-1024/512*360
+#   else:
+#       Dephase/512*360
+#   if CavPhase > 512:
+#       CavPhase-1024/512*360
+#   else:
+#       CavPhase/512*360
+#   if FwCavPhase > 512:
+#       FwCavPhase-1024/512*360
+#   else:
+#       FwCavPhase/512*360
+## This is because the original value has "two's complement", due to that a 
+#  flag has been introduced in the newSignal() definition to proceed with a 
+#  correct interpretation of the value in the processSignalSet() of the
+#  FdlFileParser class when reading signal sets from files.
+## With this is made previously, the if is not required on the formulaSignal():
+formulaSignal('Tuning_Dephase','Dephase/512*360',['Dephase'])
+formulaSignal('Tuning_CavPhase','CavPhase/512*360',['CavPhase'])
+formulaSignal('Tuning_FwCavPhase','FwCavPhase/512*360',['FwCavPhase'])
 
 #--- Diag signals
 newSignal('SSA1Input_I','SSA1Input_I')
@@ -291,61 +300,61 @@ Loops2 = 'loops2Plots'
 Diag = 'diagnosticsPlots'
 
 ##Loops1
-add2gui('CavVolt_kV',       Loops1,'topLeft',     y1,'Red')
-add2gui('BeamPhase',        Loops1,'topLeft',     y2,'Cyan')
-add2gui('RvCav_kW',         Loops1,'topRight',    y1,'Green')
-add2gui('PDisCav_kW',       Loops1,'topRight',    y2,'Red')
-add2gui('PBeam_kW',         Loops1,'topRight',    y1,'Blue')
-add2gui('Control_I',        Loops1,'middleLeft',  y1,'Blue')
-add2gui('Control_Q',        Loops1,'middleLeft',  y2,'Cyan')
-add2gui('Error_I',          Loops1,'middleRight', y1,'Green')
-add2gui('Error_Q',          Loops1,'middleRight', y1,'Blue')
-add2gui('ErroAccum_I',      Loops1,'middleRight', y2,'Yellow')
-add2gui('ErroAccum_Q',      Loops1,'middleRight', y2,'Cyan')
-add2gui('FwCav_kW',         Loops1,'bottomLeft',  y1,'Blue')
-add2gui('FwCav_Phase',      Loops1,'bottomLeft',  y2,'Cyan')
-add2gui('Tuning_Dephase',   Loops1,'bottomRight', y1,'Red')
-add2gui('Tuning_CavPhase',  Loops1,'bottomRight', y1,'Blue')
-add2gui('Tuning_FwCavPhase',Loops1,'bottomRight', y1,'Green')
+add2gui('CavVolt_kV',       Loops1,'topLeft',     Y1_,'Red')
+add2gui('BeamPhase',        Loops1,'topLeft',     Y2_,'Cyan')
+add2gui('RvCav_kW',         Loops1,'topRight',    Y1_,'Green')
+add2gui('PDisCav_kW',       Loops1,'topRight',    Y2_,'Red')
+add2gui('PBeam_kW',         Loops1,'topRight',    Y1_,'Blue')
+add2gui('Control_I',        Loops1,'middleLeft',  Y1_,'Blue')
+add2gui('Control_Q',        Loops1,'middleLeft',  Y2_,'Cyan')
+add2gui('Error_I',          Loops1,'middleRight', Y1_,'Green')
+add2gui('Error_Q',          Loops1,'middleRight', Y1_,'Blue')
+add2gui('ErroAccum_I',      Loops1,'middleRight', Y2_,'Yellow')
+add2gui('ErroAccum_Q',      Loops1,'middleRight', Y2_,'Cyan')
+add2gui('FwCav_kW',         Loops1,'bottomLeft',  Y1_,'Blue')
+add2gui('FwCav_Phase',      Loops1,'bottomLeft',  Y2_,'Cyan')
+add2gui('Tuning_Dephase',   Loops1,'bottomRight', Y1_,'Red')
+add2gui('Tuning_CavPhase',  Loops1,'bottomRight', Y1_,'Blue')
+add2gui('Tuning_FwCavPhase',Loops1,'bottomRight', Y1_,'Green')
 ##Loops2
-add2gui('FwIOT1_I',         Loops2,'topLeft',     y1,'Red')
-add2gui('FwIOT1_Q',         Loops2,'topLeft',     y1,'Blue')
-add2gui('FwIOT1',           Loops2,'topLeft',     y1,'Black')
-add2gui('FwIOT2_I',         Loops2,'topRight',    y1,'Red')
-add2gui('FwIOT2_Q',         Loops2,'topRight',    y1,'Blue')
-add2gui('FwIOT2',           Loops2,'topRight',    y1,'Black')
-add2gui('RvCircIn_I',       Loops2,'middleLeft',  y1,'Red')
-add2gui('RvCircIn_Q',       Loops2,'middleLeft',  y1,'Blue')
-add2gui('RvCircIn',         Loops2,'middleLeft',  y1,'Black')
-add2gui('Error',            Loops1,'middleRight', y1,'Red')
-add2gui('ErroAccum',        Loops1,'middleRight', y2,'Magenta')
-add2gui('FwLoad_kW',        Loops2,'middleRight', y1,'Blue')
-add2gui('FwLoad_Phase',     Loops2,'middleRight', y2,'Cyan')
-add2gui('RvCav',            Loops2,'bottomLeft',  y1,'Blue')
-add2gui('MO',               Loops2,'bottomRight', y1,'Blue')
-add2gui('MO_Phase',         Loops2,'bottomRight', y2,'Cyan')
+add2gui('FwIOT1_I',         Loops2,'topLeft',     Y1_,'Red')
+add2gui('FwIOT1_Q',         Loops2,'topLeft',     Y1_,'Blue')
+add2gui('FwIOT1',           Loops2,'topLeft',     Y1_,'Black')
+add2gui('FwIOT2_I',         Loops2,'topRight',    Y1_,'Red')
+add2gui('FwIOT2_Q',         Loops2,'topRight',    Y1_,'Blue')
+add2gui('FwIOT2',           Loops2,'topRight',    Y1_,'Black')
+add2gui('RvCircIn_I',       Loops2,'middleLeft',  Y1_,'Red')
+add2gui('RvCircIn_Q',       Loops2,'middleLeft',  Y1_,'Blue')
+add2gui('RvCircIn',         Loops2,'middleLeft',  Y1_,'Black')
+add2gui('Error',            Loops1,'middleRight', Y1_,'Red')
+add2gui('ErroAccum',        Loops1,'middleRight', Y2_,'Magenta')
+add2gui('FwLoad_kW',        Loops2,'middleRight', Y1_,'Blue')
+add2gui('FwLoad_Phase',     Loops2,'middleRight', Y2_,'Cyan')
+add2gui('RvCav',            Loops2,'bottomLeft',  Y1_,'Blue')
+add2gui('MO',               Loops2,'bottomRight', Y1_,'Blue')
+add2gui('MO_Phase',         Loops2,'bottomRight', Y2_,'Cyan')
 ## Diagnostics plots
-add2gui('SSA1Input_I',      Diag,'topLeft',           y1,'Red')
-add2gui('SSA1Input_Q',      Diag,'topLeft',           y1,'Blue')
-add2gui('SSA1Input',        Diag,'topLeft',           y1,'Black')
-add2gui('SSA2Input_I',      Diag,'topRight',          y1,'Red')
-add2gui('SSA2Input_Q',      Diag,'topRight',          y1,'Blue')
-add2gui('SSA2Input',        Diag,'topRight',          y1,'Black')
-add2gui('FwCircIn_I',       Diag,'middleUpLeft',      y1,'Red')
-add2gui('FwCircIn_Q',       Diag,'middleUpLeft',      y1,'Blue')
-add2gui('FwCircIn',         Diag,'middleUpLeft',      y1,'Black')
-add2gui('FwCircOut_I',      Diag,'middleUpRight',     y1,'Red')
-add2gui('FwCircOut_Q',      Diag,'middleUpRight',     y1,'Blue')
-add2gui('FwCircOut',        Diag,'middleUpRight',     y1,'Black')
-add2gui('RvCircOut_I',      Diag,'middleDownLeft',    y1,'Red')
-add2gui('RvCircOut_Q',      Diag,'middleDownLeft',    y1,'Blue')
-add2gui('RvCircOut',        Diag,'middleDownLeft',    y1,'Black')
-add2gui('RvLoad_I',         Diag,'middleDownRight',   y1,'Red')
-add2gui('RvLoad_Q',         Diag,'middleDownRight',   y1,'Blue')
-add2gui('RvLoad',           Diag,'middleDownRight',   y1,'Black')
-add2gui('RvIOT1_I',         Diag,'bottomLeft',        y1,'Red')
-add2gui('RvIOT1_Q',         Diag,'bottomLeft',        y1,'Blue')
-add2gui('RvIOT1',           Diag,'bottomLeft',        y1,'Black')
-add2gui('RvIOT2_I',         Diag,'bottomRight',       y1,'Red')
-add2gui('RvIOT2_Q',         Diag,'bottomRight',       y1,'Blue')
-add2gui('RvIOT2',           Diag,'bottomRight',       y1,'Black')
+add2gui('SSA1Input_I',      Diag,'topLeft',           Y1_,'Red')
+add2gui('SSA1Input_Q',      Diag,'topLeft',           Y1_,'Blue')
+add2gui('SSA1Input',        Diag,'topLeft',           Y1_,'Black')
+add2gui('SSA2Input_I',      Diag,'topRight',          Y1_,'Red')
+add2gui('SSA2Input_Q',      Diag,'topRight',          Y1_,'Blue')
+add2gui('SSA2Input',        Diag,'topRight',          Y1_,'Black')
+add2gui('FwCircIn_I',       Diag,'middleUpLeft',      Y1_,'Red')
+add2gui('FwCircIn_Q',       Diag,'middleUpLeft',      Y1_,'Blue')
+add2gui('FwCircIn',         Diag,'middleUpLeft',      Y1_,'Black')
+add2gui('FwCircOut_I',      Diag,'middleUpRight',     Y1_,'Red')
+add2gui('FwCircOut_Q',      Diag,'middleUpRight',     Y1_,'Blue')
+add2gui('FwCircOut',        Diag,'middleUpRight',     Y1_,'Black')
+add2gui('RvCircOut_I',      Diag,'middleDownLeft',    Y1_,'Red')
+add2gui('RvCircOut_Q',      Diag,'middleDownLeft',    Y1_,'Blue')
+add2gui('RvCircOut',        Diag,'middleDownLeft',    Y1_,'Black')
+add2gui('RvLoad_I',         Diag,'middleDownRight',   Y1_,'Red')
+add2gui('RvLoad_Q',         Diag,'middleDownRight',   Y1_,'Blue')
+add2gui('RvLoad',           Diag,'middleDownRight',   Y1_,'Black')
+add2gui('RvIOT1_I',         Diag,'bottomLeft',        Y1_,'Red')
+add2gui('RvIOT1_Q',         Diag,'bottomLeft',        Y1_,'Blue')
+add2gui('RvIOT1',           Diag,'bottomLeft',        Y1_,'Black')
+add2gui('RvIOT2_I',         Diag,'bottomRight',       Y1_,'Red')
+add2gui('RvIOT2_Q',         Diag,'bottomRight',       Y1_,'Blue')
+add2gui('RvIOT2',           Diag,'bottomRight',       Y1_,'Black')

@@ -43,8 +43,6 @@ import threading
 import time
 import traceback
 
-DecimationThreshold = 100
-
 class Plotter(FdlLogger,Qt.QWidget):
     '''This class is responsible to plot in the gui a set of signals it 
        receives. The signals can be from the loops set or (exclusive) from the
@@ -103,11 +101,11 @@ class Plotter(FdlLogger,Qt.QWidget):
                 if self._isPlottableSignal(signalName):
                     self._addSignal(signalName,signalsSet[signalName])
         if len(self._loopsSignals.keys()) != 0:
-            self._loopsRanges = self.calculateRanges('loops')
+            self._loopsRanges = self.calculateMaximalRanges('loops')
             self.debug("Ranges for loops [min,max,dec] = %s"
                        %(self._loopsRanges))
         if len(self._diagSignals.keys()) != 0:
-            self._diagRanges = self.calculateRanges('diag')
+            self._diagRanges = self.calculateMaximalRanges('diag')
             self.debug("Ranges for diagnostics [min,max,dec] = %s"
                        %(self._diagRanges))
         self.prepareTimeAndDecimation()
@@ -173,7 +171,7 @@ class Plotter(FdlLogger,Qt.QWidget):
                                        self._forcePlot)
                     self._buttonSignalsDone = True
 
-    def calculateRanges(self,signalType):
+    def calculateMaximalRanges(self,signalType):
         if signalType.lower() == 'loops':
             signals = self._loopsSignals
             ranges = self._loopsRanges
@@ -293,22 +291,22 @@ class Plotter(FdlLogger,Qt.QWidget):
         #Finally check if this subdictionary has a description of the plotting 
         # location in the gui.
         return SignalFields.has_key(name) and \
-               SignalFields[name].has_key(gui) and \
-               SignalFields[name][gui].has_key(tab) and \
-               SignalFields[name][gui].has_key(plot)
+               SignalFields[name].has_key(GUI_) and \
+               SignalFields[name][GUI_].has_key(TAB_) and \
+               SignalFields[name][GUI_].has_key(PLOT_)
     
     def _isLoopsSignal(self,name):
         '''Check if the signal is plottable from the side of the loops subset.
         '''
         return self._isPlottableSignal(name) and \
-               SignalFields[name][gui][tab] in [Loops1,Loops2]
+               SignalFields[name][GUI_][TAB_] in [Loops1,Loops2]
 
     def _isDiagnosticsSignal(self,name):
         '''Check if the signal is plottable from the side of the diagnostics 
            subset.
         '''
         return self._isPlottableSignal(name) and \
-               SignalFields[name][gui][tab] in [Diag]
+               SignalFields[name][GUI_][TAB_] in [Diag]
     def getPlotWidget(self,aTabName,aPlotName):
         if hasattr(self._parent,'ui') and \
            hasattr(self._parent.ui,aTabName):
@@ -373,15 +371,16 @@ class Plotter(FdlLogger,Qt.QWidget):
             lower = ranges[0]
             upper = ranges[1]
             dec = self._globalRanges[2]
+            self.debug("%s[%d:%d:%d]"%(name,lower,upper,dec))
             y = values[lower:upper:dec]
             self.debug("linspace(%g,%g,%d)"
                        %(self._startDisplay,self._endDisplay,y.size))
             x = np.linspace(self._startDisplay,self._endDisplay,y.size)
             signal = {'title':name,'x':x,'y':y}
-            destinationTab = SignalFields[name][gui][tab]
-            destinationPlot = SignalFields[name][gui][plot]
-            plotColor = SignalFields[name][gui][color]
-            destinationAxis =  SignalFields[name][gui][axis]
+            destinationTab = SignalFields[name][GUI_][TAB_]
+            destinationPlot = SignalFields[name][GUI_][PLOT_]
+            plotColor = SignalFields[name][GUI_][COLOR_]
+            destinationAxis =  SignalFields[name][GUI_][AXIS_]
             curveProp = CurveAppearanceProperties(lColor=Qt.QColor(plotColor),
                                                   yAxis=destinationAxis)
             widget = self.getPlotWidget(destinationTab,destinationPlot)
