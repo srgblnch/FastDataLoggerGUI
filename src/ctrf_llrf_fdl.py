@@ -202,7 +202,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self._loopsParser.process()
             self.memory()
         else:
-            self._loopsParser = None
+            #self._loopsParser = None
             self.callCarbageCollector()
         if len(selection['Diag']) > 0:
             self._diagParser = DiagnosticsFile(selection['Diag'])
@@ -210,11 +210,12 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self.connectSignal(self._diagParser,'done',self.loadComplete)
             self.connectSignal(self._diagParser,'swapping',
                            self.itsSwapping)
-            self._diagParser.process()
+            #self._diagParser.process()
             self.memory()
         else:
             self._diagParser = None
             self.callCarbageCollector()
+        self._launchParsers()
         self.parsingStatusMessage()
         #facade and plotting:
         self.facadeManagerBuilder(selection['facade'],selection['beamCurrent'])
@@ -235,12 +236,24 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         except Exception,e:
             self.error("Cannot proceed conntecting %s signal due to: %s"
                        %(signalStr,e))
+            
+    def _launchParsers(self):
+        if self._diagParser != None and hasattr(self._diagParser,'process'):
+            self.debug("Launching Diagnostics parser")
+            self._diagParser.process()
+            time.sleep(0.1)
+        if self._loopsParser != None and hasattr(self._loopsParser,'process'):
+            self.debug("Launching Loops parser")
+            self._loopsParser.process()
     def loadingStep(self):
         self.updateProgressBar()
         
     def loadComplete(self):
         alldone = True
         if self._getGlobalPercentage() == 100:
+            if self._loopsParser == None:
+                #when there is only a diagnostics file, change the tab
+                self.ui.plotsTab.setCurrentIndex(2)
             self.endProgressBar()
             self.signalProcessorBuilder()
             self.populateSignalProcessor()
@@ -255,6 +268,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self._diagParser.abort()
         self._closeFacadeDialog()
         self._enableWidgets(True)
+        self.cancelStatusMessage()
     #--- done load file section
     ####
     
@@ -272,6 +286,9 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         if self._diagParser != None:
             if value != 0:
                 value = (value+self._diagParser.percentage)/2
+                self.showMessage("Parsing Loops (%d%%) and Diagnostics "\
+                                 "(%d%%) files."%(self._loopsParser.percentage,
+                                                  self._diagParser.percentage))
             else:
                 value = self._diagParser.percentage
         return value
@@ -296,12 +313,14 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self.showMessage("Parsing Loops and Diagnostics files.")
         elif self._loopsParser != None:
             self.showMessage("Parsing Loops file.")
-        elif self._loopsParser != None:
+        elif self._diagParser != None:
             self.showMessage("Parsing Diagnostics file.")
     def processingStatusMessage(self):
         self.showMessage("Doing the data calculations.")
     def plottingStatusMessage(self):
         self.showMessage("Plotting the signals.")
+    def cancelStatusMessage(self):
+        self.showMessage("Process cancelled...")
     #--- done progress bar tools
     ####
     

@@ -196,9 +196,6 @@ class FdlFile(FdlLogger,Qt.QObject):
                     self._anomalies.append(distance)
                     #Anomalies are discarded 
                     #(nothing to do with the set of signals.
-                #FIXME:this is for debug, to be eliminated
-                #but it may be used to emit signals about 
-                #the progress of the process
                 current = self._iterator.iterindex
                 total = float(self._iterator.itersize)
                 if self._percentage != int((current*100)/total):
@@ -215,6 +212,10 @@ class FdlFile(FdlLogger,Qt.QObject):
                         self._standby.set()
                         while self._standby.isSet():
                             time.sleep(1)
+                    else:
+                        time.sleep(0.05)#very little wait to allow QT threads
+                        #to come to execution and have a better interactive 
+                        #response
             self.rate
             self.step.emit()
             if self._isEndOfFile():
