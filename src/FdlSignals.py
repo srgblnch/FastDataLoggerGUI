@@ -92,8 +92,9 @@ DiagFields = {'separator':   0,'??':          1,#0
               'RvIOT2_I':   16,'RvIOT2_Q':   17}#8
 
 #As explained in section 6.2
-LoopsSampleTime = 200.0 #ns
-DiagSampleTime = 112.5 #ns
+LoopsSampleTime = 200.0 #ns, 12.5 ms * 16
+DiagSampleTime = 112.5 #ns, 12.5 ms * 9
+MAX_FILE_TIME = 419.4304 #ms 128MB*2**20*8/2/16*12.5/1e6
 
 SignalFields = {}
 

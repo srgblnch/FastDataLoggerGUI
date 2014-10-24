@@ -111,22 +111,11 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self.toolsMenu.addAction(self.facadeAction)
     
     def prepareTimeAndDecimation(self):
-        #start Value
-        self.ui.timeAndDecimation._ui.startValue.setMinimum(0.0)
-        self.ui.timeAndDecimation._ui.startValue.setMaximum(419.43)
-        self.ui.timeAndDecimation._ui.startValue.setSuffix(' ms')
         self.ui.timeAndDecimation._ui.startValue.setMinimumWidth(100)
-        #endValue
-        self.ui.timeAndDecimation._ui.endValue.setMinimum(0.0)
-        self.ui.timeAndDecimation._ui.endValue.setMaximum(419.43)
+        self.ui.timeAndDecimation._ui.startValue.setSuffix(' ms')
         self.ui.timeAndDecimation._ui.endValue.setSuffix(' ms')
-        self.ui.timeAndDecimation._ui.endValue.setValue(419.43)
-        #decimation
-        self.ui.timeAndDecimation._ui.decimationValue.setMinimum(1)
-        self.ui.timeAndDecimation._ui.decimationValue.setMaximum(1000)
-        self.ui.timeAndDecimation._ui.decimationValue.setValue(1)
-        #progress bar initial value
-        self.updateProgressBar(100)
+        Plotter(self) #the creation of this object (not yet needed) stablishes 
+        #the initial default values and ranges of the time&decimation box.
     
     def _enableWidgets(self,enable):
         #buttons
