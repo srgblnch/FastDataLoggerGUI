@@ -58,10 +58,7 @@ class FacadeManager(FdlLogger,Qt.QObject):
         self._facadeAdjustments = facadeAdjustments()
         self._beamCurrent = beamCurrent#mA
         self._facadeAttrWidgets = \
-            {'CavVolt_mV':
-                {SLOPE_: self._facadeAdjustments._ui.cavityVolts_mV_MValue,
-                 OFFSET_:self._facadeAdjustments._ui.cavityVolts_mV_NValue},
-             'CavVolt_kV':
+            {'CavVolt_kV':
                 {SLOPE_: self._facadeAdjustments._ui.cavityVolts_kV_MValue,
                  OFFSET_:self._facadeAdjustments._ui.cavityVolts_kV_NValue},
              'FwCav_kW':
@@ -73,8 +70,6 @@ class FacadeManager(FdlLogger,Qt.QObject):
              'FwLoad_kW':
                 {COUPLE_:self._facadeAdjustments._ui.FwLoadCValue,
                  OFFSET_:self._facadeAdjustments._ui.FwLoadOValue},
-             BCUR_:
-                {BCUR_:self._facadeAdjustments._ui.beamCurrentValue},
             }
         self._prepareFacadeWidgets()
         try:
@@ -98,24 +93,15 @@ class FacadeManager(FdlLogger,Qt.QObject):
 
     def _prepareFacadeWidgets(self):
         for element in self._facadeAttrWidgets.keys():
-            if self._facadeAttrWidgets[element].has_key(BCUR_):
-                widget = self._facadeAttrWidgets[element][BCUR_]
-                widget.setMinimum(1.0)
-                widget.setMaximum(400.0)
-                widget.setValue(100.0)
-                widget.setSuffix(' mA')
-                #Temporaly hide this group widget until it works
-                self._facadeAdjustments._ui.beamCurrent.hide()
-            else:
-                for parameter in [SLOPE_,COUPLE_,OFFSET_]:
-                    try:
-                        if self._facadeAttrWidgets[element].has_key(parameter):
-                            widget = self._facadeAttrWidgets[element][parameter]
-                            widget.setRange(-100,100)
-                    except Exception,e:
-                        print("\n"*10)
-                        self.error("Exception %s"%(e))
-                        print("\n"*10)
+            for parameter in [SLOPE_,COUPLE_,OFFSET_]:
+                try:
+                    if self._facadeAttrWidgets[element].has_key(parameter):
+                        widget = self._facadeAttrWidgets[element][parameter]
+                        widget.setRange(-100,100)
+                except Exception,e:
+                    print("\n"*10)
+                    self.error("Exception %s"%(e))
+                    print("\n"*10)
 
     def _prepareFacadeParams(self):
         self._fromFacade = {}
@@ -130,8 +116,6 @@ class FacadeManager(FdlLogger,Qt.QObject):
                  SignalFields[field].has_key(OFFSET_):
                 self._fromFacade[field][COUPLE_] = 1
                 self._fromFacade[field][OFFSET_] = 0
-            elif field == BCUR_:
-                self._fromFacade[field][BCUR_] = 1
         self.debug("Prepared fromFacade structure: %s"
                    %(self._fromFacade.keys()))
 
@@ -162,13 +146,6 @@ class FacadeManager(FdlLogger,Qt.QObject):
                     self._fromFacade[field][COUPLE_] = c
                     self._fromFacade[field][OFFSET_] = o
                 else:
-                    requiresFacadeAdjustments = True
-            elif self._fromFacade[field].has_key(BCUR_):
-                if self._fromFacade[field][BCUR_] == self.getBeamCurrent():
-                    self.info("Beam current changed from %g to %g"
-                              %(self._fromFacade[field][BCUR_],
-                                self.getBeamCurrent()))
-                    self._fromFacade[field][BCUR_] = self.getBeamCurrent()
                     requiresFacadeAdjustments = True
         return requiresFacadeAdjustments
 
@@ -215,31 +192,13 @@ class FacadeManager(FdlLogger,Qt.QObject):
                 if self._facadeAttrWidgets.has_key(field):
                     self._facadeAttrWidgets[field][COUPLE_].setValue(c)
                     self._facadeAttrWidgets[field][OFFSET_].setValue(o)
-            if self._fromFacade[field].has_key(BCUR_):
-                self._beamCurrent = self._facadeAttrWidgets[field][BCUR_]
-                self.debug("Information to the user, %s = %g"
-                           %(field,self._beamCurrent))
-                if self._facadeAttrWidgets.has_key(field):
-                    self._facadeAttrWidgets[field][BCUR_].setValue(self._beamCurrent)
         self._facadeAdjustments.show()
-    
-    def prepareBeamCurrent(self):
-        self._facadeAttrWidgets[BCUR_][BCUR_].setValue(self._beamCurrent)
 
-    def getBeamCurrent(self):
-        try:
-            if self._beamCurrent != self._facadeAttrWidgets[BCUR_][BCUR_].value():
-                self._beamCurrent = self._facadeAttrWidgets[BCUR_][BCUR_].value()
-        except Exception,e:
-            self.warning("Error getting the beam current: %s"%(e))
-        return self._beamCurrent
-    
     def getOkButton(self):
         return self._facadeAdjustments._ui.buttonBox.\
                                               button(QtGui.QDialogButtonBox.Ok)
     def okFacade(self):
         #self.info("New parameters adjusted by hand by the user!")
-        #self.getBeamCurrent()
         hasAnyoneChanged = False
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
@@ -264,13 +223,6 @@ class FacadeManager(FdlLogger,Qt.QObject):
                               %(field,c,o))
                     self._fromFacade[field][COUPLE_] = c
                     self._fromFacade[field][OFFSET_] = o
-                    hasAnyoneChanged = True
-            elif self._fromFacade[field].has_key(BCUR_):
-                self._beamCurrent = self._facadeAttrWidgets[field][BCUR_].value()
-                if self._beamCurrent != self._fromFacade[field][BCUR_]:
-                    self.info("Changes from the user, %s = %g"
-                              %(field,self._beamCurrent))
-                    self._fromFacade[field][BCUR_] = self._beamCurrent
                     hasAnyoneChanged = True
         if hasAnyoneChanged:
             self.updated.emit()
@@ -303,4 +255,9 @@ class FacadeManager(FdlLogger,Qt.QObject):
                         self._fromFacade[signalName][OFFSET_])
         else:
             return (None,None)#FIXME
-        
+
+    def setBeamCurrent(self,value):
+        self._beamCurrent = value
+
+    def getBeamCurrent(self):
+        return self._beamCurrent

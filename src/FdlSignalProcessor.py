@@ -41,6 +41,7 @@ except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt
 
 import threading
+import warnings
 import traceback
 
 #TODO: optimise, when one or more facade parameters change not all the 
@@ -222,12 +223,12 @@ class SignalProcessor(FdlLogger,Qt.QObject):
             self.info("Calculating linear fit on %s signal"%(signal))
             m,n = self._getFacadesMandNs(signal)
             self._signals[signal] = \
-                               (self._signals[SignalFields[signal][VBLE_]]- n)/m
+                               (self._signals[SignalFields[signal][VBLE_]]*m)+n
         elif self._isQuadratic(signal):
             self.info("Calculating quadratic fit on %s signal"%(signal))
             c,o = self._getFacadesCandOs(signal)
             self._signals[signal] = \
-                    (self._signals[SignalFields[signal][VBLE_]]**2/10e8/10**c)-o
+                    (self._signals[SignalFields[signal][VBLE_]]**2/100*c)+o
         elif self._isFormula(signal):
             self.info("Calculating %s using formula '%s'"
                       %(signal,SignalFields[signal][FORMULA_]))
@@ -240,10 +241,16 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                                     'pi':np.pi,
                                     'BeamCurrent':beamCurrent},
                                    self._signals)
+            except Warning:
+                self.warning("Warning in %s eval: %s"%(signal,e))
             except RuntimeWarning,e:
                 self.warning("Warning in %s eval: %s"%(signal,e))
             except Exception,e:
                 self.error("Exception in %s eval: %s"%(signal,e))
+            else:
+                self.info("Calculated %s"%(signal))
+                if signal == 'BeamPhase':
+                    print("%d"%(len(self._signals[signal])))
         else:
             self.info("nothing to do with %s signal"%(signal))
             return

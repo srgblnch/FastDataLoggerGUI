@@ -157,21 +157,21 @@ try:#normal way
     from taurus.external.qt import Qt,QtGui,QtCore
 except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt,QtGui
-    class MyQtSignal(FdlLogger):
-        '''This class is made to emulate the pyqtSignals for too old pyqt versions.
-        '''
-        def __init__(self,name,parent=None):
-            FdlLogger.__init__(self)
-            self._parent = parent
-            self._name = name
-            self._cb = []
-        def emit(self):
-            self.debug("Signal %s emit (%s)"%(self._name,self._cb))
-            Qt.QObject.emit(self._parent,Qt.SIGNAL(self._name))
-        def connect(self,callback):
-            self.error("Trying a connect on MyQtSignal(%s)"%(self._name))
-            raise Exception("Invalid")
-            #self._cb.append(callback)
+class MyQtSignal(FdlLogger):
+    '''This class is made to emulate the pyqtSignals for too old pyqt versions.
+    '''
+    def __init__(self,name,parent=None):
+        FdlLogger.__init__(self)
+        self._parent = parent
+        self._name = name
+        self._cb = []
+    def emit(self):
+        self.debug("Signal %s emit (%s)"%(self._name,self._cb))
+        Qt.QObject.emit(self._parent,Qt.SIGNAL(self._name))
+    def connect(self,callback):
+        self.error("Trying a connect on MyQtSignal(%s)"%(self._name))
+        raise Exception("Invalid")
+        #self._cb.append(callback)
 
 from numpy.version import version as npversion
 if npversion.startswith('1.3'):

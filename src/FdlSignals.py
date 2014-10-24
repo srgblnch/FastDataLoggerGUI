@@ -106,13 +106,12 @@ SignalFields = {}
 FIELD_='field'
 I_ = 'I'
 Q_ = 'Q'
-TWOCOMPLEMENT_ = 'twoComplement'
+PHASE_ = 'Phase'
 #signals with linear of quadratic fits using facade's attrs
 VBLE_ = 'x'
 SLOPE_ = 'm'
 OFFSET_ = 'n'
 COUPLE_ = 'c'
-BCUR_ = 'BeamCurrent'
 #formula evaluation signals
 FORMULA_ = 'f'
 DEPEND_ = 'd'
@@ -128,13 +127,16 @@ Y2_ = Qwt5.QwtPlot.Axis(1)
 #--- done dictionary keywords
 ####
 
-def newSignal(name,fieldName,twoComplement=None):
+def newSignal(name,fieldName,Phase=None):
     if SignalFields.has_key(name):
         raise Exception("key %s already exist!"%(name))
     SignalFields[name] = {}
     SignalFields[name][FIELD_] = fieldName
-    if twoComplement:
-        SignalFields[name][TWOCOMPLEMENT_] = True
+    if Phase:
+        SignalFields[name][PHASE_] = True
+        
+def newPhase(name,fieldName):
+    newSignal(name,fieldName,Phase=True)
 
 def newAmplitude(name,Iname,Qname):
     if SignalFields.has_key(name):
@@ -195,9 +197,9 @@ newAmplitude('Error','Error_I','Error_Q')
 newSignal('ErroAccum_I','ErroAccum_I')
 newSignal('ErroAccum_Q','ErroAccum_Q')
 newAmplitude('ErroAccum','ErroAccum_I','ErroAccum_Q')
-newSignal('Dephase','TuningDephase',twoComplement=True)
-newSignal('CavPhase','CavityPhase',twoComplement=True)
-newSignal('FwCavPhase','FwCavPhase',twoComplement=True)
+newPhase('Dephase','TuningDephase')
+newPhase('CavPhase','CavityPhase')
+newPhase('FwCavPhase','FwCavPhase')
 newSignal('FwIOT1_I','FwIOT1_I')
 newSignal('FwIOT1_Q','FwIOT1_Q')
 newAmplitude('FwIOT1','FwIOT1_I','FwIOT1_Q')
@@ -214,10 +216,10 @@ newSignal('MO_I','MO_I')
 newSignal('MO_Q','MO_Q')
 newAmplitude('MO','MO_I','MO_Q')
 
-fittedSignal('CavVolt_mV',vbleName='CavVolt',slopeName='CAV_VOLT_m',
+#fittedSignal('CavVolt_mV',vbleName='CavVolt',slopeName='CAV_VOLT_m',
+#                                             offsetName='CAV_VOLT_n')
+fittedSignal('CavVolt_kV',vbleName='CavVolt',slopeName='CAV_VOLT_m',
                                              offsetName='CAV_VOLT_n')
-fittedSignal('CavVolt_kV',vbleName='CavVolt',slopeName='CAV_VOLT_KV_m',
-                                             offsetName='CAV_VOLT_KV_n')
 fittedSignal('FwCav_kW',vbleName='FwCav',coupleName='CAV_FW_couple',
                                          offsetName='CAV_FW_offset')
 fittedSignal('RvCav_kW',vbleName='RvCav',coupleName='CAV_RV_couple',
@@ -226,7 +228,7 @@ fittedSignal('FwLoad_kW',vbleName='FwLoad',coupleName='LOAD_FW_couple',
                                            offsetName='LOAD_FW_offset')
 
 #formula PDisCav_kW = (CavVolt_kV**2)/(10e6*2*3.3e8) was wrong
-formulaSignal('PDisCav_kW','((CavVolt*1e3)**2)/(2*3.3*1e6)',['CavVolt'])
+formulaSignal('PDisCav_kW','((CavVolt_kV*1e3)**2)/(2*3.3*1e6)',['CavVolt_kV'])
 formulaSignal('PBeam_kW','FwCav_kW-RvCav_kW-PDisCav_kW',
                          ['FwCav_kW','RvCav_kW','PDisCav_kW'])
 formulaSignal('BeamPhase',

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>350</width>
-    <height>550</height>
+    <height>450</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,66 +25,18 @@
         <x>0</x>
         <y>0</y>
         <width>336</width>
-        <height>536</height>
+        <height>436</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="0">
-        <widget class="QGroupBox" name="beamCurrent">
-         <property name="title">
-          <string>Beam current</string>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QDoubleSpinBox" name="beamCurrentValue">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="suffix">
-             <string> mA</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="7" column="0">
+       <item row="5" column="0">
         <widget class="QDialogButtonBox" name="buttonBox">
          <property name="standardButtons">
           <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="0" column="0">
         <widget class="QGroupBox" name="cavityVolts_kV">
          <property name="title">
           <string>Cavity Volts [kV]</string>
@@ -166,7 +118,7 @@
           <item row="0" column="1" colspan="5">
            <widget class="QLabel" name="cavityVolts_kV_Formula">
             <property name="text">
-             <string>y = (x-n)/m</string>
+             <string>y = x*m-n</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -176,7 +128,7 @@
          </layout>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="1" column="0">
         <widget class="QGroupBox" name="FwCav">
          <property name="title">
           <string>FwCav</string>
@@ -258,7 +210,7 @@
           <item row="0" column="1" colspan="5">
            <widget class="QLabel" name="FwCavFormula">
             <property name="text">
-             <string>y = x^2/10e8/10^c-o</string>
+             <string>y = x^2/100*c+o</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -268,99 +220,7 @@
          </layout>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QGroupBox" name="cavityVolts_mV">
-         <property name="title">
-          <string>Cavity Volts [mV]</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_2">
-          <item row="1" column="6">
-           <spacer name="cavityVolts_mV_RightSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="1" column="3">
-           <spacer name="cavityVolts_mV_CentralSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="cavityVolts_mV_MValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="5">
-           <widget class="QDoubleSpinBox" name="cavityVolts_mV_NValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="4">
-           <widget class="QLabel" name="cavityVolts_mV_NLabel">
-            <property name="text">
-             <string>offset</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLabel" name="cavityVolts_mV_MLabel">
-            <property name="text">
-             <string>slope</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <spacer name="cavityVolts_mV_LeftSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="0" column="1" colspan="5">
-           <widget class="QLabel" name="cavityVolts_mV_Formula">
-            <property name="text">
-             <string>y = (x-n)/m</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="4" column="0">
+       <item row="2" column="0">
         <widget class="QGroupBox" name="RvCav">
          <property name="title">
           <string>RwCav</string>
@@ -442,7 +302,7 @@
           <item row="0" column="1" colspan="5">
            <widget class="QLabel" name="RvCavFormula">
             <property name="text">
-             <string>y = x^2/10e8/10^c-o</string>
+             <string>y = x^2/100*c+o</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -452,7 +312,7 @@
          </layout>
         </widget>
        </item>
-       <item row="5" column="0">
+       <item row="3" column="0">
         <widget class="QGroupBox" name="FwLoad">
          <property name="title">
           <string>FwLoad [kW]</string>
@@ -534,7 +394,7 @@
           <item row="0" column="1" colspan="5">
            <widget class="QLabel" name="FwLoadFormula">
             <property name="text">
-             <string>y = x^2/10e8/10^c-o</string>
+             <string>y = x^2/100*c+o</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -544,7 +404,7 @@
          </layout>
         </widget>
        </item>
-       <item row="6" column="0">
+       <item row="4" column="0">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -572,9 +432,6 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>beamCurrentValue</tabstop>
-  <tabstop>cavityVolts_mV_MValue</tabstop>
-  <tabstop>cavityVolts_mV_NValue</tabstop>
   <tabstop>cavityVolts_kV_MValue</tabstop>
   <tabstop>cavityVolts_kV_NValue</tabstop>
   <tabstop>FwCavCValue</tabstop>
