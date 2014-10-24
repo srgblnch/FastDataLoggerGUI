@@ -80,6 +80,7 @@ class Plotter(FdlLogger,Qt.QWidget):
         self._parent = parent
         self.cleanSignals()
         self._buttonSignalsDone = False
+        self.prepareAllPlots()
 
     #####
     #---# getters&setters and conversions
@@ -493,20 +494,35 @@ class Plotter(FdlLogger,Qt.QWidget):
     
     #####
     #---# plot and clean
+    def prepareAllPlots(self,group=None):
+        '''Iterate along all the plot widgets the first time to configure them
+           in the same way
+        '''
+        #FIXME: distinguish between clean 'loops' or 'diag'
+        for aTab in allPlots.keys():
+            for aPlot in allPlots[aTab]:
+                widget = self._getPlotWidget(aTab,aPlot)
+                #to show y2 scale
+                widget.autoShowYAxes()
+                #legend position
+                widget.setLegendPosition(Qwt5.QwtPlot.BottomLegend)
+                #always show legend
+                widget.showLegend(show=True,forever=True)
+    
+    def showAllAxes(self,group=None):
+        '''Iterate along all the plot widgets to show the Y2 axis
+        '''
+        #FIXME: distinguish between clean 'loops' or 'diag'
+        for aTab in allPlots.keys():
+            for aPlot in allPlots[aTab]:
+                widget = self._getPlotWidget(aTab,aPlot)
+                #to show y2 scale
+                widget.autoShowYAxes()
+    
     def cleanAllPlots(self,group=None):
         '''Iterate along all the plot widgets and remove all raw data.
         '''
         #FIXME: distinguish between clean 'loops' or 'diag'
-        allPlots = {Loops1:['topLeft',       'topRight',
-                            'middleLeft',    'middleRight',
-                            'bottomLeft',    'bottomRight'],
-                    Loops2:['topLeft',       'topRight',
-                            'middleLeft',    'middleRight',
-                            'bottomLeft',    'bottomRight'],
-                    Diag:  ['topLeft',       'topRight',
-                            'middleUpLeft',  'middleUpRight',
-                            'middleDownLeft','middleDownRight',
-                            'bottomLeft',    'bottomRight']}
         for aTab in allPlots.keys():
             for aPlot in allPlots[aTab]:
                 widget = self._getPlotWidget(aTab,aPlot)
@@ -598,6 +614,7 @@ class Plotter(FdlLogger,Qt.QWidget):
             upper = self._convertFromTimeToIndex(endTime,
                                                  DiagSampleTime)
             self._plotSignals(self._diagSignals,[lower,upper],decimation)
+        self.showAllAxes()
         self.allPlotted.emit()
     
     def _plotSignals(self,descriptor,ranges,decimation=1):

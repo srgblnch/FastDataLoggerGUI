@@ -112,6 +112,7 @@ VBLE_ = 'x'
 SLOPE_ = 'm'
 OFFSET_ = 'n'
 COUPLE_ = 'c'
+BCUR_ = 'BeamCurrent'
 #formula evaluation signals
 FORMULA_ = 'f'
 DEPEND_ = 'd'
@@ -215,7 +216,7 @@ newAmplitude('MO','MO_I','MO_Q')
 
 fittedSignal('CavVolt_mV',vbleName='CavVolt',slopeName='CAV_VOLT_m',
                                              offsetName='CAV_VOLT_n')
-fittedSignal('CavVolt_kV',vbleName='CavVolt_mV',slopeName='CAV_VOLT_KV_m',
+fittedSignal('CavVolt_kV',vbleName='CavVolt',slopeName='CAV_VOLT_KV_m',
                                              offsetName='CAV_VOLT_KV_n')
 fittedSignal('FwCav_kW',vbleName='FwCav',coupleName='CAV_FW_couple',
                                          offsetName='CAV_FW_offset')
@@ -225,23 +226,24 @@ fittedSignal('FwLoad_kW',vbleName='FwLoad',coupleName='LOAD_FW_couple',
                                            offsetName='LOAD_FW_offset')
 
 #formula PDisCav_kW = (CavVolt_kV**2)/(10e6*2*3.3e8) was wrong
-formulaSignal('PDisCav_kW','((CavVolt_kV*1e3)**2)/(2*3.3*1e6)',['CavVolt_kV'])
+formulaSignal('PDisCav_kW','((CavVolt*1e3)**2)/(2*3.3*1e6)',['CavVolt'])
 formulaSignal('PBeam_kW','FwCav_kW-RvCav_kW-PDisCav_kW',
                          ['FwCav_kW','RvCav_kW','PDisCav_kW'])
 formulaSignal('BeamPhase',
-              '180-arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV)*180/pi',
+            '180-rad2deg(arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV))*180/pi',
               ['PBeam_kW','CavVolt_kV'])
-formulaSignal('FwCav_Phase','arctan(FwCav_Q,FwCav_I)*180/pi+180',
+formulaSignal('FwCav_Phase','rad2deg(arctan(FwCav_Q,FwCav_I))*180/pi',
                             ['FwCav_Q','FwCav_I'])
                             #arctan(Q/I)*180/pi+180 
                             #if I>0 else 
                             #arctan(Q/I)*180/pi
-formulaSignal('FwLoad_Phase','arctan(FwLoad_Q,FwLoad_I)*180/pi+180',
+formulaSignal('FwLoad_Phase','rad2deg(arctan(FwLoad_Q,FwLoad_I))*180/pi',
                              ['FwLoad_Q','FwLoad_I'])
                              #arctan(FwLoad_Q/FwLoad_I*180/pi+180 
                              #if FwLoad_I < 0 else 
                              #arctan(FwLoad_Q/FwLoad_I*180/pi
-formulaSignal('MO_Phase','arctan(MO_Q,MO_I)*180/pi+180',['MO_Q','MO_I'])
+formulaSignal('MO_Phase','rad2deg(arctan(MO_Q,MO_I))*180/pi',
+                         ['MO_Q','MO_I'])
                          #arctan(Q/I)*180/pi+180 
                          #if I<0 else 
                          #arctan(Q/I)*180/pi
@@ -299,6 +301,16 @@ newAmplitude('RvIOT2','RvIOT2_I','RvIOT2_Q')
 Loops1 = 'loops1Plots'
 Loops2 = 'loops2Plots'
 Diag = 'diagnosticsPlots'
+allPlots = {Loops1:['topLeft',       'topRight',
+                    'middleLeft',    'middleRight',
+                    'bottomLeft',    'bottomRight'],
+            Loops2:['topLeft',       'topRight',
+                    'middleLeft',    'middleRight',
+                    'bottomLeft',    'bottomRight'],
+            Diag:  ['topLeft',       'topRight',
+                    'middleUpLeft',  'middleUpRight',
+                    'middleDownLeft','middleDownRight',
+                    'bottomLeft',    'bottomRight']}
 
 ##Loops1
 add2gui('CavVolt_kV',       Loops1,'topLeft',     Y1_,'Red')

@@ -236,6 +236,7 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                 self._signals[signal] = eval(SignalFields[signal][FORMULA_],
                                    {'arcsin':np.arcsin,
                                     'arctan':np.arctan2,
+                                    'rad2deg':np.rad2deg,
                                     'pi':np.pi,
                                     'BeamCurrent':beamCurrent},
                                    self._signals)

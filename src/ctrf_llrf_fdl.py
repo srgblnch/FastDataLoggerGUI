@@ -327,9 +327,15 @@ class MainWindow(TaurusMainWindow,FdlLogger):
     ####
     #--- File loaders area
     def areParsersProcessing(self):
-        loops = self.isLoopsProcessing() if self._loopsParser != None else True
-        diag = self.isDiagProcessing() if self._diagParser != None else True
-        return loops and diag
+        if self._loopsParser != None:
+            loops = self.isLoopsProcessing() 
+        else:
+            loops = False
+        if self._diagParser != None:
+            diag = self.isDiagProcessing()
+        else:
+            diag = False
+        return loops or diag
     def isLoopsProcessing(self):
         return self._loopsParser != None and self._loopsParser.isProcessing()
     def isDiagProcessing(self):
@@ -724,7 +730,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
 def main():
     parser = argparse.get_taurus_parser()
     app = TaurusApplication(sys.argv, cmd_line_parser=parser,
-                      app_name='ctrfdllrf_fdl', app_version='0.1',
+                      app_name='ctrfdllrf_fdl', app_version='0.2',
                       org_domain='ALBA', org_name='ALBA')
     options = app.get_command_line_options()
     ui = MainWindow()

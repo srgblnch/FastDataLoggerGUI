@@ -239,10 +239,16 @@ class FdlFile(FdlLogger,Qt.QObject):
         for keyName in self._signals.keys():
             fieldName = SignalFields[keyName][FIELD_]
             value = self._values[self._iterator.iterindex+self._fields[fieldName]]
-            value = float(value)/32767*1000
+#            if self._iterator.iterindex < 100:
+#                self.debug("%s[%d]: '%s'"
+#                            %(fieldName,self._iterator.iterindex,value))
+            fvalue = float(value)/(32767*1000)
             if SignalFields[keyName].has_key(TWOCOMPLEMENT_):
-                if value > 512: value -= 1024
-            self._signals[keyName].append(value)
+#                if fieldName == 'CavityPhase' and self._iterator.iterindex < 100:
+#                    self.debug("%s[%d]: '%s' %g"
+#                               %(fieldName,self._iterator.iterindex,value,fvalue))
+                if fvalue > 512: fvalue -= 1024
+            self._signals[keyName].append(fvalue)
     #--- done processing area
     ####
     
