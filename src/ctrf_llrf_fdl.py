@@ -70,7 +70,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         self._plotter = None
         self.splashScreen().finish(self)
     def initComponents(self):
-        self.setWindowTitle("RF DLLRF FDL Taurus User Interface")
+        self.updateWindowTitle()
         self.centralwidget = self.ui.generalScrollArea
         self.setCentralWidget(self.centralwidget)
         #Remove the perspectives bar (meaning less in this gui)
@@ -110,6 +110,12 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self.error("The 'Facade fits' action cannot be inserted as "\
                        "the first element of the 'Tools' menu")
             self.toolsMenu.addAction(self.facadeAction)
+    
+    def updateWindowTitle(self,plant=None):
+        title = "RF DLLRF FDL Taurus User Interface"
+        if plant != None:
+            title += " - %s"%plant
+        self.setWindowTitle(title)
     
     def prepareTimeAndDecimation(self):
         self.ui.timeAndDecimation._ui.startValue.setMinimumWidth(100)
@@ -249,6 +255,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         selection = self._loader.getSelection()
         self.ui.LoopsFileValue.setText(selection['Loops'].split('/')[-1])
         self.ui.DiagFileValue.setText(selection['Diag'].split('/')[-1])
+        self.updateWindowTitle(selection['plant'])
         self.ui.BeamCurrentValue.setValue(selection['beamCurrent'])
         #self.ui.BeamCurrentValue.setEnabled(True)
         #TODO: connect to FacadeManager to recalculate when this value changes
