@@ -120,6 +120,7 @@ class FacadeManager(FdlLogger,Qt.QObject):
                    %(self._fromFacade.keys()))
 
     def populateFacadeParams(self):
+        self.info("Populate Facade's parameters")
         requiresFacadeAdjustments = False
         for field in SignalFields.keys():
             #FIXME: these ifs needs a refactoring
@@ -171,27 +172,9 @@ class FacadeManager(FdlLogger,Qt.QObject):
                            Qt.SIGNAL('clicked(bool)'),self.okFacade)
         Qt.QObject.connect(self.getCancelButton(),
                            Qt.SIGNAL('clicked(bool)'),self.cancelFacade)
-        #use _fromFacade to populate widgets
-        for field in self._fromFacade.keys():
-            #FIXME: these ifs needs a refactoring
-            if self._fromFacade[field].has_key(SLOPE_) and \
-               self._fromFacade[field].has_key(OFFSET_):
-                m = self._fromFacade[field][SLOPE_]
-                n = self._fromFacade[field][OFFSET_]
-                self.debug("Information to the user, signal %s: m = %g, n = %g"
-                           %(field,m,n))
-                if self._facadeAttrWidgets.has_key(field):
-                    self._facadeAttrWidgets[field][SLOPE_].setValue(m)
-                    self._facadeAttrWidgets[field][OFFSET_].setValue(n)
-            if self._fromFacade[field].has_key(COUPLE_) and \
-               self._fromFacade[field].has_key(OFFSET_):
-                c = self._fromFacade[field][COUPLE_]
-                o = self._fromFacade[field][OFFSET_]
-                self.debug("Information to the user, signal %s: c = %g, o = %g"
-                           %(field,c,o))
-                if self._facadeAttrWidgets.has_key(field):
-                    self._facadeAttrWidgets[field][COUPLE_].setValue(c)
-                    self._facadeAttrWidgets[field][OFFSET_].setValue(o)
+        Qt.QObject.connect(self.getResetButton(),
+                          Qt.SIGNAL('clicked(bool)'),self.getFacadeValues2widgets)
+        self.getFacadeValues2widgets()
         self._facadeAdjustments.show()
 
     def getOkButton(self):
@@ -235,6 +218,33 @@ class FacadeManager(FdlLogger,Qt.QObject):
         if hasattr(self,'_facadeAdjustments') and \
            self._facadeAdjustments != None:
             self._facadeAdjustments.hide()
+            
+    def getResetButton(self):
+        return self._facadeAdjustments._ui.buttonBox.\
+                                           button(QtGui.QDialogButtonBox.Reset)
+
+    def getFacadeValues2widgets(self):
+        #use _fromFacade to populate widgets
+        for field in self._fromFacade.keys():
+            #FIXME: these ifs needs a refactoring
+            if self._fromFacade[field].has_key(SLOPE_) and \
+               self._fromFacade[field].has_key(OFFSET_):
+                m = self._fromFacade[field][SLOPE_]
+                n = self._fromFacade[field][OFFSET_]
+                self.debug("Information to the user, signal %s: m = %g, n = %g"
+                           %(field,m,n))
+                if self._facadeAttrWidgets.has_key(field):
+                    self._facadeAttrWidgets[field][SLOPE_].setValue(m)
+                    self._facadeAttrWidgets[field][OFFSET_].setValue(n)
+            if self._fromFacade[field].has_key(COUPLE_) and \
+               self._fromFacade[field].has_key(OFFSET_):
+                c = self._fromFacade[field][COUPLE_]
+                o = self._fromFacade[field][OFFSET_]
+                self.debug("Information to the user, signal %s: c = %g, o = %g"
+                           %(field,c,o))
+                if self._facadeAttrWidgets.has_key(field):
+                    self._facadeAttrWidgets[field][COUPLE_].setValue(c)
+                    self._facadeAttrWidgets[field][OFFSET_].setValue(o)
 
     def getMandNs(self,signalName):
         if signalName in self._fromFacade.keys():
