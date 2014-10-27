@@ -234,6 +234,7 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                       %(signal,SignalFields[signal][FORMULA_]))
             try:
                 beamCurrent = self._getFacadesBeamCurrent()
+                self.debug("beamCurrent = %g"%(beamCurrent))
                 self._signals[signal] = eval(SignalFields[signal][FORMULA_],
                                    {'arcsin':np.arcsin,
                                     'arctan':np.arctan2,

@@ -39,13 +39,72 @@
           </widget>
          </item>
          <item>
+          <widget class="QFrame" name="frame">
+           <property name="minimumSize">
+            <size>
+             <width>285</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_9">
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="BeamCurrentValue">
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="DiagFileValue"/>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="LoopsFileValue">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="CurrentLabel">
+              <property name="text">
+               <string>Current</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="DiagFileLabel">
+              <property name="text">
+               <string>Diagnostics</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="LoopsFileLabel">
+              <property name="text">
+               <string>Loops</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
           <spacer name="horizontalSpacer">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>356</width>
+             <width>40</width>
              <height>20</height>
             </size>
            </property>
@@ -84,7 +143,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>756</width>
-                <height>818</height>
+                <height>812</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout_6">
@@ -112,8 +171,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>620</width>
-                <height>624</height>
+                <width>756</width>
+                <height>812</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout_7">
@@ -141,7 +200,7 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>620</width>
+                <width>741</width>
                 <height>828</height>
                </rect>
               </property>

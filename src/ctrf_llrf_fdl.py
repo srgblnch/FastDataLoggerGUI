@@ -76,6 +76,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         #Remove the perspectives bar (meaning less in this gui)
         self.perspectivesToolBar.clear()
         self.prepareTimeAndDecimation()
+        self.prepareHeader()
         #prepare button reactions
         Qt.QObject.connect(self.ui.loadButton,
                            Qt.SIGNAL('clicked(bool)'),
@@ -97,7 +98,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self.fileMenu.addAction(self.loadFileAction)
             self.error("The 'Open Files...' action cannot be inserted as "\
                        "the first element of the 'File' menu")
-        self._enableWidgets(True)
+        self.prepareWidgets()
         #adjustments on the facade configuration
         self.facadeAction = Qt.QAction('Facade fits',self)
         self.facadeAction.setEnabled(False)
@@ -117,6 +118,24 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         Plotter(self) #the creation of this object (not yet needed) stablishes 
         #the initial default values and ranges of the time&decimation box.
     
+    def prepareHeader(self):
+        self.ui.LoopsFileValue.setReadOnly(True)
+        self.ui.DiagFileValue.setReadOnly(True)
+        self.ui.BeamCurrentValue.setMinimum(1.0)
+        self.ui.BeamCurrentValue.setMaximum(400.0)
+        #self.ui.beamCurrentValue.setValue(100.0)
+        self.ui.BeamCurrentValue.setSuffix(' mA')
+        self.ui.BeamCurrentValue.setEnabled(False)
+    
+    def prepareWidgets(self):
+        self.ui.loadButton.setEnabled(True)
+        self.ui.cancelButton.hide()
+        self.ui.replotButton.setEnabled(False)
+        self.ui.timeAndDecimation._ui.startValue.setEnabled(False)
+        self.ui.timeAndDecimation._ui.endValue.setEnabled(False)
+        self.ui.timeAndDecimation._ui.decimationValue.setEnabled(False)
+        self.ui.BeamCurrentValue.setEnabled(False)
+    
     def _enableWidgets(self,enable):
         #buttons
         self.ui.loadButton.setEnabled(enable)
@@ -131,6 +150,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         self.ui.timeAndDecimation._ui.startValue.setEnabled(enable)
         self.ui.timeAndDecimation._ui.endValue.setEnabled(enable)
         self.ui.timeAndDecimation._ui.decimationValue.setEnabled(enable)
+        self.ui.BeamCurrentValue.setEnabled(enable)
         
     def closeEvent(self,event):
         if (self._loopsParser != None and self._loopsParser.isProcessing())or\
@@ -221,8 +241,21 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         self.facadeManagerBuilder(selection['facade'],selection['beamCurrent'])
         if self._facade.populateFacadeParams():
             self._facade.doFacadeAdjusments()
+        self.populateHeader()
         self.memory()
         self._loader = None
+
+    def populateHeader(self):
+        selection = self._loader.getSelection()
+        self.ui.LoopsFileValue.setText(selection['Loops'].split('/')[-1])
+        self.ui.DiagFileValue.setText(selection['Diag'].split('/')[-1])
+        self.ui.BeamCurrentValue.setValue(selection['beamCurrent'])
+        #self.ui.BeamCurrentValue.setEnabled(True)
+        #TODO: connect to FacadeManager to recalculate when this value changes
+        self.connectSignal(self.ui.BeamCurrentValue,
+                           'editingFinished()',
+                           self.facadeHasUpdated)
+
     def connectSignal(self,obj,signalStr,callback):
         try:
             objStr = [ k for k,v in locals().iteritems() if v is obj][0]
@@ -389,7 +422,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self.memory()
     def facadeHasUpdated(self):
         self.debug("Received update signal from facade and calling processor")
-        if not self.areParsersProcessing():
+        if not self.areParsersProcessing() and self._postProcessor != None:
             self.enableProgressBar(True)
             self.processingStatusMessage()
             self._postProcessor.process()
