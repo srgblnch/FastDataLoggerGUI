@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/FacadeAdjustments.ui'
 #
-# Created: Mon Oct 27 15:59:32 2014
+# Created: Wed Oct 29 11:08:23 2014
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -182,14 +182,14 @@ class Ui_facadeAdjustments(object):
         self.FwCav.setTitle(QtGui.QApplication.translate("facadeAdjustments", "FwCav", None, QtGui.QApplication.UnicodeUTF8))
         self.FwCavOLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "offset", None, QtGui.QApplication.UnicodeUTF8))
         self.FwCavCLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "couple", None, QtGui.QApplication.UnicodeUTF8))
-        self.FwCavFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y = x^2/100*c+o", None, QtGui.QApplication.UnicodeUTF8))
+        self.FwCavFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y = x^2/1e5/10^c+o", None, QtGui.QApplication.UnicodeUTF8))
         self.RvCav.setTitle(QtGui.QApplication.translate("facadeAdjustments", "RwCav", None, QtGui.QApplication.UnicodeUTF8))
         self.RvCavCLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "couple", None, QtGui.QApplication.UnicodeUTF8))
         self.RvCavOLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "offset", None, QtGui.QApplication.UnicodeUTF8))
-        self.RvCavFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y = x^2/100*c+o", None, QtGui.QApplication.UnicodeUTF8))
+        self.RvCavFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y = x^2/1e5/10^c+o", None, QtGui.QApplication.UnicodeUTF8))
         self.FwLoad.setTitle(QtGui.QApplication.translate("facadeAdjustments", "FwLoad [kW]", None, QtGui.QApplication.UnicodeUTF8))
         self.FwLoadCLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "couple", None, QtGui.QApplication.UnicodeUTF8))
         self.FwLoadOLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "offset", None, QtGui.QApplication.UnicodeUTF8))
-        self.FwLoadFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y = x^2/100*c+o", None, QtGui.QApplication.UnicodeUTF8))
+        self.FwLoadFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y = x^2/1e5/10^c+o", None, QtGui.QApplication.UnicodeUTF8))
 
 from taurus.qt.qtgui.panel import TaurusWidget

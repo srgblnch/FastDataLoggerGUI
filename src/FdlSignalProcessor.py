@@ -228,7 +228,7 @@ class SignalProcessor(FdlLogger,Qt.QObject):
             self.info("Calculating quadratic fit on %s signal"%(signal))
             c,o = self._getFacadesCandOs(signal)
             self._signals[signal] = \
-                    (self._signals[SignalFields[signal][VBLE_]]**2/100*c)+o
+                    (self._signals[SignalFields[signal][VBLE_]]**2/1e5/10**c)+o
         elif self._isFormula(signal):
             self.info("Calculating %s using formula '%s'"
                       %(signal,SignalFields[signal][FORMULA_]))

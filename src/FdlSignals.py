@@ -233,13 +233,21 @@ formulaSignal('PBeam_kW','FwCav_kW-RvCav_kW-PDisCav_kW',
                          ['FwCav_kW','RvCav_kW','PDisCav_kW'])
 
 #---- FIXME: many intermediate values used for debugging.
-#formulaSignal('BeamPhase',
-#            '180-rad2deg(arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV))*180/pi',
-#              ['PBeam_kW','CavVolt_kV'])
-formulaSignal('PBeam_kW_1000','PBeam_kW*100',['PBeam_kW'])
-formulaSignal('PBeam_kW_1000_BeamCurrent','PBeam_kW_1000/BeamCurrent',['PBeam_kW_1000'])
-formulaSignal('PBeam_kW_1000_BeamCurrent_CavVolt_kV','PBeam_kW_1000_BeamCurrent/CavVolt_kV',['PBeam_kW_1000_BeamCurrent','CavVolt_kV'])
-formulaSignal('BeamPhase','180-rad2deg(arcsin(PBeam_kW_1000_BeamCurrent_CavVolt_kV))*180/pi',['PBeam_kW_1000_BeamCurrent_CavVolt_kV'])
+DEBUG = False
+if not DEBUG:
+    formulaSignal('BeamPhase',
+            '180-rad2deg(arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV))*180/pi',
+              ['PBeam_kW','CavVolt_kV'])
+else:
+    formulaSignal('PBeam_kW_1000','PBeam_kW*100',['PBeam_kW'])
+    formulaSignal('PBeam_kW_1000_BeamCurrent','PBeam_kW_1000/BeamCurrent',
+                  ['PBeam_kW_1000'])
+    formulaSignal('PBeam_kW_1000_BeamCurrent_CavVolt_kV',
+                  'PBeam_kW_1000_BeamCurrent/CavVolt_kV',
+                  ['PBeam_kW_1000_BeamCurrent','CavVolt_kV'])
+    formulaSignal('BeamPhase',
+            '180-rad2deg(arcsin(PBeam_kW_1000_BeamCurrent_CavVolt_kV))*180/pi',
+                  ['PBeam_kW_1000_BeamCurrent_CavVolt_kV'])
 #---- Must be cleaned before production
 
 formulaSignal('FwCav_Phase','rad2deg(arctan(FwCav_Q,FwCav_I))*180/pi',
@@ -325,10 +333,12 @@ allPlots = {Loops1:['topLeft',       'topRight',
 ##Loops1
 add2gui('CavVolt_kV',       Loops1,'topLeft',     Y1_,'Red')
 add2gui('BeamPhase',        Loops1,'topLeft',     Y2_,'Cyan')
-#FIXME: to be removed
-#add2gui('PBeam_kW_1000_BeamCurrent_CavVolt_kV',Loops1,'topLeft',   Y1_,'Green')
-#add2gui('PBeam_kW_1000_BeamCurrent',           Loops1,'topLeft',   Y1_,'Blue')
-#add2gui('PBeam_kW_1000',                       Loops1,'topLeft',  Y1_,'Yellow')
+if DEBUG:
+    #FIXME: to be removed
+    add2gui('PBeam_kW_1000_BeamCurrent_CavVolt_kV',
+            Loops1,'topLeft',Y1_,'Green')
+    add2gui('PBeam_kW_1000_BeamCurrent',           Loops1,'topLeft',Y1_,'Blue')
+    add2gui('PBeam_kW_1000',                     Loops1,'topLeft',Y1_,'Yellow')
 add2gui('RvCav_kW',         Loops1,'topRight',    Y1_,'Green')
 add2gui('PDisCav_kW',       Loops1,'topRight',    Y2_,'Red')
 add2gui('PBeam_kW',         Loops1,'topRight',    Y1_,'Blue')
