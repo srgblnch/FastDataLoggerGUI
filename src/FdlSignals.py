@@ -228,7 +228,8 @@ fittedSignal('FwLoad_kW',vbleName='FwLoad',coupleName='LOAD_FW_couple',
                                            offsetName='LOAD_FW_offset')
 
 #formula PDisCav_kW = (CavVolt_kV**2)/(10e6*2*3.3e8) was wrong
-formulaSignal('PDisCav_kW','((CavVolt_kV*1e3)**2)/(2*3.3*1e6)',['CavVolt_kV'])
+formulaSignal('PDisCav_kW','((CavVolt_kV*1e3)**2)/(2*3.3*1e6)/1000',
+              ['CavVolt_kV'])
 formulaSignal('PBeam_kW','FwCav_kW-RvCav_kW-PDisCav_kW',
                          ['FwCav_kW','RvCav_kW','PDisCav_kW'])
 
@@ -236,7 +237,7 @@ formulaSignal('PBeam_kW','FwCav_kW-RvCav_kW-PDisCav_kW',
 DEBUG = False
 if not DEBUG:
     formulaSignal('BeamPhase',
-            '180-rad2deg(arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV))*180/pi',
+            '180-rad2deg(arcsin(PBeam_kW*1000/BeamCurrent/CavVolt_kV))',
               ['PBeam_kW','CavVolt_kV'])
 else:
     formulaSignal('PBeam_kW_1000','PBeam_kW*100',['PBeam_kW'])
@@ -246,21 +247,21 @@ else:
                   'PBeam_kW_1000_BeamCurrent/CavVolt_kV',
                   ['PBeam_kW_1000_BeamCurrent','CavVolt_kV'])
     formulaSignal('BeamPhase',
-            '180-rad2deg(arcsin(PBeam_kW_1000_BeamCurrent_CavVolt_kV))*180/pi',
+            '180-rad2deg(arcsin(PBeam_kW_1000_BeamCurrent_CavVolt_kV))',
                   ['PBeam_kW_1000_BeamCurrent_CavVolt_kV'])
 #---- Must be cleaned before production
 
-formulaSignal('FwCav_Phase','rad2deg(arctan(FwCav_Q,FwCav_I))*180/pi',
+formulaSignal('FwCav_Phase','rad2deg(arctan(FwCav_Q,FwCav_I))',
                             ['FwCav_Q','FwCav_I'])
                             #arctan(Q/I)*180/pi+180 
                             #if I>0 else 
                             #arctan(Q/I)*180/pi
-formulaSignal('FwLoad_Phase','rad2deg(arctan(FwLoad_Q,FwLoad_I))*180/pi',
+formulaSignal('FwLoad_Phase','rad2deg(arctan(FwLoad_Q,FwLoad_I))',
                              ['FwLoad_Q','FwLoad_I'])
                              #arctan(FwLoad_Q/FwLoad_I*180/pi+180 
                              #if FwLoad_I < 0 else 
                              #arctan(FwLoad_Q/FwLoad_I*180/pi
-formulaSignal('MO_Phase','rad2deg(arctan(MO_Q,MO_I))*180/pi',
+formulaSignal('MO_Phase','rad2deg(arctan(MO_Q,MO_I))',
                          ['MO_Q','MO_I'])
                          #arctan(Q/I)*180/pi+180 
                          #if I<0 else 

@@ -242,7 +242,7 @@ class FdlFile(FdlLogger,Qt.QObject):
             if SignalFields[keyName].has_key(PHASE_):
                 fvalue = float(value)/(2**6)
             else:
-                fvalue = float(value)/(32767*1000)
+                fvalue = float(value)/32767*1000
             if self._iterator.iterindex < 64:
                 self.debug("%s[%d] value=%d fvalue=%g"
                            %(fieldName,self._iterator.iterindex,value,fvalue))
