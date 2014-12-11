@@ -145,7 +145,8 @@ def newAmplitude(name,Iname,Qname):
     SignalFields[name][I_] = Iname
     SignalFields[name][Q_] = Qname
 
-def fittedSignal(name,vbleName,slopeName=None,coupleName=None,offsetName=None):
+def fittedSignal(name,vbleName,slopeName=None,coupleName=None,offsetName=None,
+                 formula=None):
     if SignalFields.has_key(name):
         raise Exception("key %s already exist!"%(name))
     if (slopeName == None and coupleName == None) or \
@@ -159,6 +160,8 @@ def fittedSignal(name,vbleName,slopeName=None,coupleName=None,offsetName=None):
     elif coupleName != None:
         SignalFields[name][COUPLE_] = coupleName
     SignalFields[name][OFFSET_] = offsetName
+    if formula != None:
+        SignalFields[name][FORMULA_] = formula
 
 def formulaSignal(name,itsFormula,dependencies):
     if SignalFields.has_key(name):
@@ -219,13 +222,20 @@ newAmplitude('MO','MO_I','MO_Q')
 #fittedSignal('CavVolt_mV',vbleName='CavVolt',slopeName='CAV_VOLT_m',
 #                                             offsetName='CAV_VOLT_n')
 fittedSignal('CavVolt_kV',vbleName='CavVolt',slopeName='CAV_VOLT_m',
-                                             offsetName='CAV_VOLT_n')
+                                             offsetName='CAV_VOLT_n',
+             #formula='y = x*m+n'
+             )
 fittedSignal('FwCav_kW',vbleName='FwCav',coupleName='CAV_FW_couple',
-                                         offsetName='CAV_FW_offset')
+                                         offsetName='CAV_FW_offset',
+             formula='y = x**2/100*c+o')
 fittedSignal('RvCav_kW',vbleName='RvCav',coupleName='CAV_RV_couple',
-                                         offsetName='CAV_RV_offset')
+                                         offsetName='CAV_RV_offset',
+             #formula='y = x**2/1e8/10**c+o'
+             )
 fittedSignal('FwLoad_kW',vbleName='FwLoad',coupleName='LOAD_FW_couple',
-                                           offsetName='LOAD_FW_offset')
+                                           offsetName='LOAD_FW_offset',
+             #formula='y = x**2/1e8/10**c+o'
+             )
 
 #formula PDisCav_kW = (CavVolt_kV**2)/(10e6*2*3.3e8) was wrong
 formulaSignal('PDisCav_kW','((CavVolt_kV*1e3)**2)/(2*3.3*1e6)/1000',

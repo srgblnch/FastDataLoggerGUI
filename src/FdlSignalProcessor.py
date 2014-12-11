@@ -142,7 +142,15 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                  self._isVbleInOurSet(signalName):
                 facadeFit.append(signalName)
             elif self._isFormula(signalName):
-                withFormula.append(signalName)
+                self.info("BeamCurrent = %g"%self._getFacadesBeamCurrent())
+                if self._getFacadesBeamCurrent() == 0 and \
+                       SignalFields[signalName][FORMULA_].count('BeamCurrent'):
+                    self.info("Excluding %s because the beamcurrent is 0"
+                              %(signalName))
+                    if signalName in self._signals.keys():
+                        self._signals.pop(signalName)
+                else:
+                    withFormula.append(signalName)
             else:
                 orphan.append(signalName)
         self.debug("Nothing to do with the %d file parsed signals: %s"
@@ -156,6 +164,19 @@ class SignalProcessor(FdlLogger,Qt.QObject):
         #      be assumed that there is no loading file from it.
         self.warning("Alert, found %d orphan signals: %s."
                      %(len(orphan),orphan))
+#        if self._getFacadesBeamCurrent() == 0:
+#            # check the beam current to know if there is no beam (current = 0)
+#            # on that case then remove the formula signals that have the 
+#            # beamcurrent as a variable.
+#            self.warning("Beam current is 0, exclude the signals that have "\
+#                         "it in the formula")
+#            for signalName in withFormula:
+#                if SignalFields[signalName][FORMULA_].count('BeamCurrent'):
+#                    withFormula.pop(withFormula.index(signalName))
+#                    self.info("removed %s from the list of formulas"
+#                              %(signalName))
+#        self.info("*** beam current %g == 0: %s"
+#                  %(self._getFacadesBeamCurrent(),self._getFacadesBeamCurrent()==0))
         return {'ready':doneSignals,
                 'facade':facadeFit,
                 FORMULA_:withFormula,
@@ -222,13 +243,37 @@ class SignalProcessor(FdlLogger,Qt.QObject):
         if self._isLinear(signal):
             self.info("Calculating linear fit on %s signal"%(signal))
             m,n = self._getFacadesMandNs(signal)
-            self._signals[signal] = \
+            if SignalFields[signal].has_key(FORMULA_):
+                formula = SignalFields[signal][FORMULA_]
+                formula = formula.replace('y = ','')
+                formula = formula.replace('x',SignalFields[signal][VBLE_])
+                self._signals[signal] = eval(formula,
+                                             {'m':m,'n':n},
+                                             self._signals)
+                self.info("To evaluate %s, it has been used the formula %s"
+                          %(signal,formula))
+            else:
+                self._signals[signal] = \
                                (self._signals[SignalFields[signal][VBLE_]]*m)+n
+                self.info("To evaluate %s, it has been used the default "\
+                          "formula"%(signal))
         elif self._isQuadratic(signal):
             self.info("Calculating quadratic fit on %s signal"%(signal))
             c,o = self._getFacadesCandOs(signal)
-            self._signals[signal] = \
+            if SignalFields[signal].has_key(FORMULA_):
+                formula = SignalFields[signal][FORMULA_]
+                formula = formula.replace('y = ','')
+                formula = formula.replace('x',SignalFields[signal][VBLE_])
+                self._signals[signal] = eval(formula,
+                                             {'c':c,'o':o},
+                                             self._signals)
+                self.info("To evaluate %s, it has been used the formula %s"
+                          %(signal,formula))
+            else:
+                self._signals[signal] = \
                     (self._signals[SignalFields[signal][VBLE_]]**2/1e8/10**c)+o
+                self.info("To evaluate %s, it has been used the default "\
+                          "formula"%(signal))
         elif self._isFormula(signal):
             self.info("Calculating %s using formula '%s'"
                       %(signal,SignalFields[signal][FORMULA_]))
@@ -317,7 +362,8 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                    SignalFields[signal].has_key(OFFSET_)
         return False
     def _isFormula(self,signal):
-        if SignalFields[signal].has_key(FORMULA_):
+        if SignalFields[signal].has_key(FORMULA_) and \
+                                                 not self._isFacadeFit(signal):
             #if any of the dependencies is NOT facade fit
             signalDependencies = copy(SignalFields[signal][DEPEND_])
             for i,aDependency in enumerate(signalDependencies):

@@ -35,14 +35,16 @@ try:#normal way
     from taurus.external.qt import Qt,QtGui,QtCore
 except:#backward compatibility to pyqt 4.4.3
     from taurus.qt import Qt,QtGui
+    from FdlFileParser import MyQtSignal
 from PyTango import DevFailed
 
 from FdlSignals import *
 from facadeadjustments import facadeAdjustments
+import traceback
 
 FACADES_SERVERNAME = 'LLRFFacade'
 
-class FacadeManager(FdlLogger,Qt.QObject):
+class FacadeManager(FdlLogger,Qt.QWidget):#Object):
     try:#normal way
         updated = QtCore.pyqtSignal()
     except:#backward compatibility to pyqt 4.4.3
@@ -50,9 +52,11 @@ class FacadeManager(FdlLogger,Qt.QObject):
     def __init__(self,facadeInstanceName,beamCurrent=100):
         FdlLogger.__init__(self)
         try:#normal way
-            Qt.QObject.__init__(self, parent=None)
+            Qt.QWidget.__init__(self, parent=None)
+            #Qt.QObject.__init__(self, parent=None)
         except:#backward compatibility to pyqt 4.4.3
-            Qt.QObject.__init__(self)
+            Qt.QWidget.__init__(self)
+            #Qt.QObject.__init__(self)
             self.updated._parent = self
         self._facadeInstanceName = facadeInstanceName
         self._facadeAdjustments = facadeAdjustments()
@@ -60,16 +64,20 @@ class FacadeManager(FdlLogger,Qt.QObject):
         self._facadeAttrWidgets = \
             {'CavVolt_kV':
                 {SLOPE_: self._facadeAdjustments._ui.cavityVolts_kV_MValue,
-                 OFFSET_:self._facadeAdjustments._ui.cavityVolts_kV_NValue},
+                 OFFSET_:self._facadeAdjustments._ui.cavityVolts_kV_NValue,
+                 FORMULA_:self._facadeAdjustments._ui.cavityVolts_kV_Formula},
              'FwCav_kW':
                 {COUPLE_:self._facadeAdjustments._ui.FwCavCValue,
-                 OFFSET_:self._facadeAdjustments._ui.FwCavOValue},
+                 OFFSET_:self._facadeAdjustments._ui.FwCavOValue,
+                 FORMULA_:self._facadeAdjustments._ui.FwCavFormula},
              'RvCav_kW':
                 {COUPLE_:self._facadeAdjustments._ui.RvCavCValue,
-                 OFFSET_:self._facadeAdjustments._ui.RvCavOValue},
+                 OFFSET_:self._facadeAdjustments._ui.RvCavOValue,
+                 FORMULA_:self._facadeAdjustments._ui.RvCavFormula},
              'FwLoad_kW':
                 {COUPLE_:self._facadeAdjustments._ui.FwLoadCValue,
-                 OFFSET_:self._facadeAdjustments._ui.FwLoadOValue},
+                 OFFSET_:self._facadeAdjustments._ui.FwLoadOValue,
+                 FORMULA_:self._facadeAdjustments._ui.FwLoadFormula},
             }
         self._prepareFacadeWidgets()
         try:
@@ -124,8 +132,7 @@ class FacadeManager(FdlLogger,Qt.QObject):
         requiresFacadeAdjustments = False
         for field in SignalFields.keys():
             #FIXME: these ifs needs a refactoring
-            if SignalFields[field].has_key(SLOPE_) and \
-               SignalFields[field].has_key(OFFSET_):
+            if self.hasMandNs(field):
                 mAttr = SignalFields[field][SLOPE_]
                 nAttr = SignalFields[field][OFFSET_]
                 m = self.readAttr(mAttr)
@@ -136,8 +143,8 @@ class FacadeManager(FdlLogger,Qt.QObject):
                     self._fromFacade[field][OFFSET_] = n
                 else:
                     requiresFacadeAdjustments = True
-            elif SignalFields[field].has_key(COUPLE_) and \
-                 SignalFields[field].has_key(OFFSET_):
+                self._populateFormula(field)
+            elif self.hasCandOs(field):
                 cAttr = SignalFields[field][COUPLE_]
                 oAttr = SignalFields[field][OFFSET_]
                 c = self.readAttr(cAttr)
@@ -148,7 +155,62 @@ class FacadeManager(FdlLogger,Qt.QObject):
                     self._fromFacade[field][OFFSET_] = o
                 else:
                     requiresFacadeAdjustments = True
+                self._populateFormula(field)
         return requiresFacadeAdjustments
+
+    def _populateFormula(self,field):
+        try:
+            if SignalFields[field].has_key(FORMULA_):
+                formula = SignalFields[field][FORMULA_]
+                if self._facadeAttrWidgets.has_key(field):
+                    widget = self._facadeAttrWidgets[field][FORMULA_]
+                    if formula != str(widget.text()):
+                        widget.setText(formula)
+        except Exception,e:
+            self.error("It wasn't possible to check if the facade signal %s "\
+                       "has an specific formula: %s"%(field,e))
+            
+    def _verifyFormula(self,field):
+        #FIXME: this would raise an exception to prevent the user.
+        if self._facadeAttrWidgets.has_key(field):
+            widget = self._facadeAttrWidgets[field][FORMULA_]
+            formula = str(widget.text())
+            if not SignalFields[field].has_key(FORMULA_):
+                #case there is not explicit formula for it
+                SignalFields[field][FORMULA_] = formula
+                return True
+            elif formula != SignalFields[field][FORMULA_]:
+                self.info("%s formula has changed from '%s' to '%s'"
+                          %(field,SignalFields[field][FORMULA_],formula))
+                if not self.__formulaBeginWith(formula):
+                    raise Exception("Formula has to start with 'y = '.")
+                if not self.__formulaHasX(formula):
+                    raise Exception("Formula requires at least one time the "\
+                                    "variable 'x'")
+                    return False
+                if self.hasMandNs(field) and \
+                                      not self.__formulaHasMandNs(formula):
+                    raise Exception("Formula requires the slope tagged as 'm'"\
+                                    " and the offset with an 'n'.")
+                if self.hasCandOs(field) and \
+                                      not self.__formulaHasCandOs(formula):
+                    raise Exception("Formula requires the couple tagged as "\
+                                    "'c' and the offset with an 'o'.")
+                SignalFields[field][FORMULA_] = formula
+                return True
+            else:
+                self.info("%s formula hasn't change, still '%s'"
+                          %(field,formula))
+                return False
+
+    def __formulaBeginWith(self,formula):
+        return formula.startswith("y =")
+    def __formulaHasX(self,formula):
+        return bool(formula.count('x'))
+    def __formulaHasMandNs(self,formula):
+        return bool(formula.count('m')) and bool(formula.count('n'))
+    def __formulaHasCandOs(self,formula):
+        return bool(formula.count('c')) and bool(formula.count('o'))
 
     def readAttr(self,attrName):
         try:
@@ -168,48 +230,80 @@ class FacadeManager(FdlLogger,Qt.QObject):
         if self._facadeAdjustments == None:
             self._facadeAdjustments = facadeAdjustments()
         self._facadeAdjustments.setWindowTitle("Facade's parameters")
+        Qt.QObject.connect(self.getResetButton(),
+                       Qt.SIGNAL('clicked(bool)'),self.getFacadeValues2widgets)
         Qt.QObject.connect(self.getOkButton(),
                            Qt.SIGNAL('clicked(bool)'),self.okFacade)
+        Qt.QObject.connect(self.getApplyButton(),
+                           Qt.SIGNAL('clicked(bool)'),self.applyFacade)
         Qt.QObject.connect(self.getCancelButton(),
                            Qt.SIGNAL('clicked(bool)'),self.cancelFacade)
-        Qt.QObject.connect(self.getResetButton(),
-                          Qt.SIGNAL('clicked(bool)'),self.getFacadeValues2widgets)
         self.getFacadeValues2widgets()
         self._facadeAdjustments.show()
+
+    def getApplyButton(self):
+        return self._facadeAdjustments._ui.buttonBox.\
+                                           button(QtGui.QDialogButtonBox.Apply)
+    def applyFacade(self):
+        #self.info("New parameters adjusted by hand by the user!")
+        hasAnyoneChanged = False
+        formulaExceptions = {}
+        for field in self._fromFacade.keys():
+            #FIXME: these ifs needs a refactoring
+            if self.hasMandNs(field):
+                m = float(self._facadeAttrWidgets[field][SLOPE_].value())
+                n = float(self._facadeAttrWidgets[field][OFFSET_].value())
+                if self._fromFacade[field][SLOPE_] != m or \
+                   self._fromFacade[field][OFFSET_] != n:
+                    self.info("Changes from the user, signal %s: "\
+                              "m = %g, n = %g"%(field,m,n))
+                    self._fromFacade[field][SLOPE_] = m
+                    self._fromFacade[field][OFFSET_] = n
+                    hasAnyoneChanged = True
+                try:
+                    if self._verifyFormula(field):
+                        hasAnyoneChanged = True
+                    self.info("%s formula ok"%(field))
+                except Exception,e:
+                    formulaExceptions[field] = e
+                    self.warning("%s formula exception: %s"%(field,e))
+            elif self.hasCandOs(field):
+                c = float(self._facadeAttrWidgets[field][COUPLE_].value())
+                o = float(self._facadeAttrWidgets[field][OFFSET_].value())
+                if self._fromFacade[field][COUPLE_] != c or \
+                   self._fromFacade[field][OFFSET_] != o:
+                    self.info("Changes from the user, signal %s: "\
+                              "c = %g, o = %g"%(field,c,o))
+                    self._fromFacade[field][COUPLE_] = c
+                    self._fromFacade[field][OFFSET_] = o
+                    hasAnyoneChanged = True
+                try:
+                    if self._verifyFormula(field):
+                        hasAnyoneChanged = True
+                    self.info("%s formula ok"%(field))
+                except Exception,e:
+                    formulaExceptions[field] = e
+                    self.warning("%s formula exception: %s"%(field,e))
+                    traceback.print_exc()
+        if len(formulaExceptions.keys()) > 0:
+            title = "Not all the formulas can be verified!"
+            msg = "Review formula(s):\n"
+            for field in formulaExceptions.keys():
+                msg = "".join("%s- %s: %s\n"
+                              %(msg,field,formulaExceptions[field]))
+            QtGui.QMessageBox.warning(self,title,msg)
+        else:
+            if hasAnyoneChanged:
+                self.updated.emit()
+            return True
+        return False
 
     def getOkButton(self):
         return self._facadeAdjustments._ui.buttonBox.\
                                               button(QtGui.QDialogButtonBox.Ok)
     def okFacade(self):
-        #self.info("New parameters adjusted by hand by the user!")
-        hasAnyoneChanged = False
-        for field in self._fromFacade.keys():
-            #FIXME: these ifs needs a refactoring
-            if self._fromFacade[field].has_key(SLOPE_) and \
-               self._fromFacade[field].has_key(OFFSET_):
-                m = float(self._facadeAttrWidgets[field][SLOPE_].value())
-                n = float(self._facadeAttrWidgets[field][OFFSET_].value())
-                if self._fromFacade[field][SLOPE_] != m or \
-                   self._fromFacade[field][OFFSET_] != n:
-                    self.info("Changes from the user, signal %s: m = %g, n = %g"
-                              %(field,m,n))
-                    self._fromFacade[field][SLOPE_] = m
-                    self._fromFacade[field][OFFSET_] = n
-                    hasAnyoneChanged = True
-            elif self._fromFacade[field].has_key(COUPLE_) and \
-                 self._fromFacade[field].has_key(OFFSET_):
-                c = float(self._facadeAttrWidgets[field][COUPLE_].value())
-                o = float(self._facadeAttrWidgets[field][OFFSET_].value())
-                if self._fromFacade[field][COUPLE_] != c or \
-                   self._fromFacade[field][OFFSET_] != o:
-                    self.info("Changes from the user, signal %s: c = %g, o = %g"
-                              %(field,c,o))
-                    self._fromFacade[field][COUPLE_] = c
-                    self._fromFacade[field][OFFSET_] = o
-                    hasAnyoneChanged = True
-        if hasAnyoneChanged:
-            self.updated.emit()
-        self._facadeAdjustments.hide()
+        if self.applyFacade():
+            self._facadeAdjustments.hide()
     def getCancelButton(self):
         return self._facadeAdjustments._ui.buttonBox.\
                                           button(QtGui.QDialogButtonBox.Cancel)
@@ -246,6 +340,10 @@ class FacadeManager(FdlLogger,Qt.QObject):
                     self._facadeAttrWidgets[field][COUPLE_].setValue(c)
                     self._facadeAttrWidgets[field][OFFSET_].setValue(o)
 
+    def hasMandNs(self,signalName):
+        return SignalFields[signalName].has_key(SLOPE_) and \
+                 SignalFields[signalName].has_key(OFFSET_)
+
     def getMandNs(self,signalName):
         if signalName in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
@@ -255,6 +353,10 @@ class FacadeManager(FdlLogger,Qt.QObject):
                         self._fromFacade[signalName][OFFSET_])
         else:
             raise Exception("signal %s hasn't M&N's"%(signalName))
+
+    def hasCandOs(self,signalName):
+        return SignalFields[signalName].has_key(COUPLE_) and \
+                 SignalFields[signalName].has_key(OFFSET_)
 
     def getCandOs(self,signalName):
         if signalName in self._fromFacade.keys():

@@ -127,7 +127,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
     def prepareHeader(self):
         self.ui.LoopsFileValue.setReadOnly(True)
         self.ui.DiagFileValue.setReadOnly(True)
-        self.ui.BeamCurrentValue.setMinimum(1.0)
+        self.ui.BeamCurrentValue.setMinimum(0.0)
         self.ui.BeamCurrentValue.setMaximum(400.0)
         #self.ui.beamCurrentValue.setValue(100.0)
         self.ui.BeamCurrentValue.setSuffix(' mA')
@@ -261,7 +261,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         #TODO: connect to FacadeManager to recalculate when this value changes
         self.connectSignal(self.ui.BeamCurrentValue,
                            'editingFinished()',
-                           self.facadeHasUpdated)
+                           self.updateBeamCurrent)
 
     def connectSignal(self,obj,signalStr,callback):
         try:
@@ -395,6 +395,10 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         self.facadeAction.setEnabled(True)
         self.connect(self.facadeAction, Qt.SIGNAL("triggered()"),
                      self._facade.doFacadeAdjusments)
+    def updateBeamCurrent(self):
+        if self._facade != None:
+            self._facade.setBeamCurrent(self.ui.BeamCurrentValue.value())
+            self.facadeHasUpdated()
     #--- done facade information area
     ####
     
@@ -427,6 +431,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
                        %(self._diagParser.getObjectSize()))
             self._diagParser = None
             self.memory()
+
     def facadeHasUpdated(self):
         self.debug("Received update signal from facade and calling processor")
         if not self.areParsersProcessing() and self._postProcessor != None:
@@ -461,6 +466,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
             self.connectSignal(self._plotter,'allPlotted',self.allPlotted)
         self.populatePlotter()
     def populatePlotter(self):
+        print("self._postProcessor._signals = %s"%self._postProcessor._signals.keys())
         self._plotter.cleanSignals()
         self._plotter.appendSignals(self._postProcessor._signals)
         self.enableProgressBar(True)
@@ -531,7 +537,7 @@ defaultConfigurations = "%s/RF/FDL_Lyrtech"%(sandbox)
 # and in those cases there are 'A' and 'B' plants, 
 # not present in the other cases
 
-PlantsDescriptor = {'WR':[''],'BO':[''],
+PlantsDescriptor = {'WR':['','B'],'BO':[''],
                     'SR06':['A','B'],'SR10':['A','B'],'SR14':['A','B']}
 knownPlants = ['%s%s'%(location,plant) for location in PlantsDescriptor.keys()\
                                        for plant in PlantsDescriptor[location]]
@@ -540,10 +546,13 @@ knownPlants.sort()
 class PlantTranslator:
     def __init__(self,shortName):
         self._shortName = shortName
-        if len(shortName) == 3 and \
-           'SR%s'%(shortName[:2]) in PlantsDescriptor.keys():
-            self._location = 'SR%s'%(shortName[:2])
-            self._inSectorPlant = shortName[-1:]
+        if len(shortName) == 3:
+            if 'SR%s'%(shortName[:2]) in PlantsDescriptor.keys():
+                self._location = 'SR%s'%(shortName[:2])
+                self._inSectorPlant = shortName[-1:]
+            elif shortName[:2] in PlantsDescriptor.keys():
+                self._location = shortName[:2]
+                self._inSectorPlant = '%s'%shortName[2]
         else:
             self._location = shortName
             self._inSectorPlant = ''
@@ -682,12 +691,13 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
             pass#TODO: warn the user about a location change
         elif newIndex == -1: #doesn't exist
             self.panel().locationCombo.addItem(str(plant))
+        self._plant= PlantTranslator(str(plant))
         self.panel().locationCombo.setCurrentIndex(newIndex)
         self.searchFacade()
         #it cannot be smart enough to know that
 
     def searchFacade(self):
-        self.debug("given the known plants (%s) and the current selected "\
+        self.debug("Given the known plants (%s) and the current selected "\
                   "plant (%s) which of the found facades (%s) can be?"
                   %(knownPlants,self._plant.completeName,self._facadesFound))
         if self._plant.facadeInstanceName in self._facadesFound:
@@ -695,6 +705,12 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
                       %(self._plant.facadeInstanceName))
             newIndex = self.panel().facadeCombo.findText(\
                                                 self._plant.facadeInstanceName)
+        elif self._plant.facadeInstanceName+'-01' in self._facadesFound:
+            self.info("Match found adding a sequence suffix: %s-01"
+                      %(self._plant.facadeInstanceName))
+            newIndex = self.panel().facadeCombo.findText(\
+                                          self._plant.facadeInstanceName+'-01')
+            self._plant._inSectorPlant += '-01'
         else:
             self.warning("Not match found of %s in %s"
                          %(self._plant.facadeInstanceName,self._facadesFound))
@@ -750,7 +766,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         QtGui.QMessageBox.warning(self,title,msg)
 
     def setupBeamCurrent(self):
-        self.panel().beamCurrentValue.setMinimum(1.0)
+        self.panel().beamCurrentValue.setMinimum(0.0)
         self.panel().beamCurrentValue.setMaximum(400.0)
         self.panel().beamCurrentValue.setValue(100.0)
         self.panel().beamCurrentValue.setSuffix(' mA')
@@ -770,7 +786,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
 def main():
     parser = argparse.get_taurus_parser()
     app = TaurusApplication(sys.argv, cmd_line_parser=parser,
-                      app_name='ctrfdllrf_fdl', app_version='0.2',
+                      app_name='ctrfdllrf_fdl', app_version='0.3',
                       org_domain='ALBA', org_name='ALBA')
     options = app.get_command_line_options()
     ui = MainWindow()

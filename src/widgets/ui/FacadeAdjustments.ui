@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>350</width>
+    <width>392</width>
     <height>450</height>
    </rect>
   </property>
@@ -24,22 +24,61 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>336</width>
+        <width>378</width>
         <height>436</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="5" column="0">
+       <item row="5" column="1">
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="3" column="0">
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="3" column="2">
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="6" column="1">
         <widget class="QDialogButtonBox" name="buttonBox">
          <property name="standardButtons">
-          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
+          <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
+       <item row="1" column="1">
         <widget class="QGroupBox" name="cavityVolts_kV">
          <property name="title">
-          <string>Cavity Volts [kV]</string>
+          <string>CavVolt_kV [x = CavVolt]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_5">
           <item row="1" column="4">
@@ -116,7 +155,7 @@
            </spacer>
           </item>
           <item row="0" column="1" colspan="5">
-           <widget class="QLabel" name="cavityVolts_kV_Formula">
+           <widget class="QLineEdit" name="cavityVolts_kV_Formula">
             <property name="text">
              <string>y = x*m-n</string>
             </property>
@@ -128,10 +167,10 @@
          </layout>
         </widget>
        </item>
-       <item row="1" column="0">
+       <item row="2" column="1">
         <widget class="QGroupBox" name="FwCav">
          <property name="title">
-          <string>FwCav</string>
+          <string>FwCav_kW [x = FwCav]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
           <item row="1" column="4">
@@ -208,7 +247,7 @@
            </spacer>
           </item>
           <item row="0" column="1" colspan="5">
-           <widget class="QLabel" name="FwCavFormula">
+           <widget class="QLineEdit" name="FwCavFormula">
             <property name="text">
              <string>y = x^2/1e5/10^c+o</string>
             </property>
@@ -220,10 +259,10 @@
          </layout>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="3" column="1">
         <widget class="QGroupBox" name="RvCav">
          <property name="title">
-          <string>RwCav</string>
+          <string>RwCav_kW [x = RwCav]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
           <item row="1" column="3">
@@ -234,6 +273,19 @@
             <property name="sizeHint" stdset="0">
              <size>
               <width>22</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="6">
+           <spacer name="RvCavRightSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>21</width>
               <height>20</height>
              </size>
             </property>
@@ -276,19 +328,6 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="6">
-           <spacer name="RvCavRightSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>21</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
           <item row="1" column="5">
            <widget class="QDoubleSpinBox" name="RvCavOValue">
             <property name="decimals">
@@ -300,9 +339,9 @@
            </widget>
           </item>
           <item row="0" column="1" colspan="5">
-           <widget class="QLabel" name="RvCavFormula">
+           <widget class="QLineEdit" name="RvCavFormula">
             <property name="text">
-             <string>y = x^2/1e5/10^c+o</string>
+             <string>y = x^2/1e8/10^c+o</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -312,10 +351,10 @@
          </layout>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="4" column="1">
         <widget class="QGroupBox" name="FwLoad">
          <property name="title">
-          <string>FwLoad [kW]</string>
+          <string>FwLoad_kW [x = FwLoad]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_8">
           <item row="1" column="3">
@@ -392,9 +431,9 @@
            </widget>
           </item>
           <item row="0" column="1" colspan="5">
-           <widget class="QLabel" name="FwLoadFormula">
+           <widget class="QLineEdit" name="FwLoadFormula">
             <property name="text">
-             <string>y = x^2/1e5/10^c+o</string>
+             <string>y = x^2/1e8/10^c+o</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -404,8 +443,8 @@
          </layout>
         </widget>
        </item>
-       <item row="4" column="0">
-        <spacer name="verticalSpacer">
+       <item row="0" column="1">
+        <spacer name="verticalSpacer_2">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
