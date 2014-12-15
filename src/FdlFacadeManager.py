@@ -332,8 +332,14 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
         if ShuntImpedance != self.getShuntImpedance():
             self.info("Changed the Shunt Impedance from %s to %s"
                       %(self.getShuntImpedance(),ShuntImpedance))
-            self.setShuntImpedance(ShuntImpedance)
-            hasAnyoneChanged = True
+            try:
+                eval(ShuntImpedance)
+            except SyntaxError,e:
+                formulaExceptions['ShuntImpedance'] = "Cannot be evaluated, "\
+                                                      "syntax error."
+            else:
+                self.setShuntImpedance(ShuntImpedance)
+                hasAnyoneChanged = True
         if len(formulaExceptions.keys()) > 0:
             title = "Not all the formulas can be verified!"
             msg = "Review formula(s):\n"
