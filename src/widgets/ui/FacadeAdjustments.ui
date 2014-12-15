@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>392</width>
-    <height>450</height>
+    <height>535</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,11 +25,11 @@
         <x>0</x>
         <y>0</y>
         <width>378</width>
-        <height>436</height>
+        <height>521</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="5" column="1">
+       <item row="6" column="1">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -42,7 +42,46 @@
          </property>
         </spacer>
        </item>
-       <item row="3" column="0">
+       <item row="0" column="1">
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="1" column="1">
+        <widget class="QGroupBox" name="ShuntImpedanceGroup">
+         <property name="title">
+          <string/>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="ShuntImpedanceLabel">
+            <property name="text">
+             <string>Shunt Impedance</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="ShuntImpedanceValue">
+            <property name="text">
+             <string>2*3.3*1e6</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="4" column="0">
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -55,7 +94,7 @@
          </property>
         </spacer>
        </item>
-       <item row="3" column="2">
+       <item row="4" column="2">
         <spacer name="horizontalSpacer_2">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -68,14 +107,14 @@
          </property>
         </spacer>
        </item>
-       <item row="6" column="1">
+       <item row="7" column="1">
         <widget class="QDialogButtonBox" name="buttonBox">
          <property name="standardButtons">
           <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="2" column="1">
         <widget class="QGroupBox" name="cavityVolts_kV">
          <property name="title">
           <string>CavVolt_kV [x = CavVolt]</string>
@@ -157,7 +196,7 @@
           <item row="0" column="1" colspan="5">
            <widget class="QLineEdit" name="cavityVolts_kV_Formula">
             <property name="text">
-             <string>y = x*m-n</string>
+             <string>y = x*m+n</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -167,7 +206,7 @@
          </layout>
         </widget>
        </item>
-       <item row="2" column="1">
+       <item row="3" column="1">
         <widget class="QGroupBox" name="FwCav">
          <property name="title">
           <string>FwCav_kW [x = FwCav]</string>
@@ -259,7 +298,7 @@
          </layout>
         </widget>
        </item>
-       <item row="3" column="1">
+       <item row="4" column="1">
         <widget class="QGroupBox" name="RvCav">
          <property name="title">
           <string>RwCav_kW [x = RwCav]</string>
@@ -351,7 +390,7 @@
          </layout>
         </widget>
        </item>
-       <item row="4" column="1">
+       <item row="5" column="1">
         <widget class="QGroupBox" name="FwLoad">
          <property name="title">
           <string>FwLoad_kW [x = FwLoad]</string>
@@ -442,19 +481,6 @@
           </item>
          </layout>
         </widget>
-       </item>
-       <item row="0" column="1">
-        <spacer name="verticalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </widget>

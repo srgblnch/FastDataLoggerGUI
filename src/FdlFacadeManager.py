@@ -41,6 +41,8 @@ from PyTango import DevFailed
 from FdlSignals import *
 from facadeadjustments import facadeAdjustments
 import traceback
+import numpy as np
+import sys
 
 FACADES_SERVERNAME = 'LLRFFacade'
 
@@ -49,7 +51,8 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
         updated = QtCore.pyqtSignal()
     except:#backward compatibility to pyqt 4.4.3
         updated = MyQtSignal('updated')
-    def __init__(self,facadeInstanceName,beamCurrent=100):
+    def __init__(self,facadeInstanceName,beamCurrent=100,
+                 shuntImpedance='2*3.3*1e6'):
         FdlLogger.__init__(self)
         try:#normal way
             Qt.QWidget.__init__(self, parent=None)
@@ -61,6 +64,8 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
         self._facadeInstanceName = facadeInstanceName
         self._facadeAdjustments = facadeAdjustments()
         self._beamCurrent = beamCurrent#mA
+        self._shuntImpedance = shuntImpedance#an string representation 
+                                             #like '2*3.3*1e6'
         self._facadeAttrWidgets = \
             {'CavVolt_kV':
                 {SLOPE_: self._facadeAdjustments._ui.cavityVolts_kV_MValue,
@@ -196,6 +201,13 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                                       not self.__formulaHasCandOs(formula):
                     raise Exception("Formula requires the couple tagged as "\
                                     "'c' and the offset with an 'o'.")
+                try:
+                    self.__testFormulaEval(formula,field)
+                except SyntaxError,e:
+                    raise Exception("Formula could not be evaluated due to a "\
+                                    "syntax error.")
+                except Exception,e:
+                    raise Exception("Formula could not be evaluated. %s"%(e))
                 SignalFields[field][FORMULA_] = formula
                 return True
             else:
@@ -211,6 +223,14 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
         return bool(formula.count('m')) and bool(formula.count('n'))
     def __formulaHasCandOs(self,formula):
         return bool(formula.count('c')) and bool(formula.count('o'))
+    def __testFormulaEval(self,formula,field):
+        if self.__formulaHasMandNs(formula):
+            m = 1;n = 0
+        elif self.__formulaHasCandOs(formula):
+            c = 1;n = 0
+        x = np.array([0.,1,2,3])#very simple test vector
+        formula.split('=')[1].strip()
+        res = eval(formula)
 
     def readAttr(self,attrName):
         try:
@@ -230,6 +250,7 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
         if self._facadeAdjustments == None:
             self._facadeAdjustments = facadeAdjustments()
         self._facadeAdjustments.setWindowTitle("Facade's parameters")
+        #connect signals for the buttons
         Qt.QObject.connect(self.getResetButton(),
                        Qt.SIGNAL('clicked(bool)'),self.getFacadeValues2widgets)
         Qt.QObject.connect(self.getOkButton(),
@@ -238,6 +259,28 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                            Qt.SIGNAL('clicked(bool)'),self.applyFacade)
         Qt.QObject.connect(self.getCancelButton(),
                            Qt.SIGNAL('clicked(bool)'),self.cancelFacade)
+        #connect signals for the QLineEdits and the QSpinBoxes
+        #to apply when press enter
+        listOfLineEdits = [self._facadeAdjustments._ui.ShuntImpedanceValue,
+                           self._facadeAdjustments._ui.cavityVolts_kV_Formula,
+                           self._facadeAdjustments._ui.FwCavFormula,
+                           self._facadeAdjustments._ui.RvCavFormula,
+                           self._facadeAdjustments._ui.FwLoadFormula]
+        for widget in listOfLineEdits:
+            Qt.QObject.connect(widget,\
+                               Qt.SIGNAL('returnPressed()'),self.applyFacade)
+        listOfSpinBoxes = [self._facadeAdjustments._ui.cavityVolts_kV_MValue,
+                           self._facadeAdjustments._ui.cavityVolts_kV_NValue,
+                           self._facadeAdjustments._ui.FwCavCValue,
+                           self._facadeAdjustments._ui.FwCavOValue,
+                           self._facadeAdjustments._ui.RvCavCValue,
+                           self._facadeAdjustments._ui.RvCavOValue,
+                           self._facadeAdjustments._ui.FwLoadCValue,
+                           self._facadeAdjustments._ui.FwLoadOValue]
+        for widget in listOfSpinBoxes:
+            Qt.QObject.connect(widget,\
+                               Qt.SIGNAL('editingFinished()'),self.applyFacade)
+
         self.getFacadeValues2widgets()
         self._facadeAdjustments.show()
 
@@ -285,6 +328,12 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                     formulaExceptions[field] = e
                     self.warning("%s formula exception: %s"%(field,e))
                     traceback.print_exc()
+        ShuntImpedance =self._facadeAdjustments._ui.ShuntImpedanceValue.text()
+        if ShuntImpedance != self.getShuntImpedance():
+            self.info("Changed the Shunt Impedance from %s to %s"
+                      %(self.getShuntImpedance(),ShuntImpedance))
+            self.setShuntImpedance(ShuntImpedance)
+            hasAnyoneChanged = True
         if len(formulaExceptions.keys()) > 0:
             title = "Not all the formulas can be verified!"
             msg = "Review formula(s):\n"
@@ -339,6 +388,8 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                 if self._facadeAttrWidgets.has_key(field):
                     self._facadeAttrWidgets[field][COUPLE_].setValue(c)
                     self._facadeAttrWidgets[field][OFFSET_].setValue(o)
+        self._facadeAdjustments._ui.ShuntImpedanceValue.setText(\
+                                                      self.getShuntImpedance())
 
     def hasMandNs(self,signalName):
         return SignalFields[signalName].has_key(SLOPE_) and \
@@ -373,3 +424,10 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
 
     def getBeamCurrent(self):
         return self._beamCurrent
+    
+    def setShuntImpedance(self,strvalue):
+        self._shuntImpedance = strvalue
+    
+    def getShuntImpedance(self):
+        return self._shuntImpedance
+

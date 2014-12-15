@@ -238,7 +238,7 @@ fittedSignal('FwLoad_kW',vbleName='FwLoad',coupleName='LOAD_FW_couple',
              )
 
 #formula PDisCav_kW = (CavVolt_kV**2)/(10e6*2*3.3e8) was wrong
-formulaSignal('PDisCav_kW','((CavVolt_kV*1e3)**2)/(2*3.3*1e6)/1000',
+formulaSignal('PDisCav_kW','((CavVolt_kV*1e3)**2)/ShuntImpedance/1000',
               ['CavVolt_kV'])
 formulaSignal('PBeam_kW','FwCav_kW-RvCav_kW-PDisCav_kW',
                          ['FwCav_kW','RvCav_kW','PDisCav_kW'])

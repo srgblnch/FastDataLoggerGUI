@@ -142,7 +142,6 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                  self._isVbleInOurSet(signalName):
                 facadeFit.append(signalName)
             elif self._isFormula(signalName):
-                self.info("BeamCurrent = %g"%self._getFacadesBeamCurrent())
                 if self._getFacadesBeamCurrent() == 0 and \
                        SignalFields[signalName][FORMULA_].count('BeamCurrent'):
                     self.info("Excluding %s because the beamcurrent is 0"
@@ -279,13 +278,17 @@ class SignalProcessor(FdlLogger,Qt.QObject):
                       %(signal,SignalFields[signal][FORMULA_]))
             try:
                 beamCurrent = self._getFacadesBeamCurrent()
-                self.debug("beamCurrent = %g"%(beamCurrent))
+                ShuntImpedance = self._getFacadesShuntImpedance()
+                self.info("beamCurrent = %g; ShuntImpedance = %s"
+                           %(beamCurrent,ShuntImpedance))
+                ShuntImpedance = eval(ShuntImpedance)
                 self._signals[signal] = eval(SignalFields[signal][FORMULA_],
                                    {'arcsin':np.arcsin,
                                     'arctan':np.arctan2,
                                     'rad2deg':np.rad2deg,
                                     'pi':np.pi,
-                                    'BeamCurrent':beamCurrent},
+                                    'BeamCurrent':beamCurrent,
+                                    'ShuntImpedance':ShuntImpedance},
                                    self._signals)
             except Warning:
                 self.warning("Warning in %s eval: %s"%(signal,e))
@@ -327,6 +330,11 @@ class SignalProcessor(FdlLogger,Qt.QObject):
             return self._facade.getBeamCurrent()
         else:
             return 100.0
+    def _getFacadesShuntImpedance(self):
+        if self._facade:
+            return self._facade.getShuntImpedance()
+        else:
+            return '2*3.3*1e6'
     def _isFileSignal(self,signal):
         if not self._isSignalInOurSet(signal):
             return False
