@@ -547,7 +547,7 @@ class Plotter(FdlLogger,Qt.QWidget):
         try:
             TimeUpperBoundary = self._getTimeUpperBoundary()
             if TimeUpperBoundary == False:
-                self.info("Not yet data to upper time limit!")
+                self.debug("Not yet data to upper time limit!")
                 self._getTimeStartLabelWidget().setText("Start Display [0,%d]"\
                                                            " ms"%MAX_FILE_TIME)
                 self._getTimeEndLabelWidget().setText("End Display [0,%d] ms"
@@ -574,7 +574,7 @@ class Plotter(FdlLogger,Qt.QWidget):
         try:
             decimationLowerBoundary = self._getDecimationLowerboundary()
             if decimationLowerBoundary == False:
-                self.info("Not yet data to decimation lower limit!")
+                self.debug("Not yet data to decimation lower limit!")
                 self._getDecimationLabelWidget().setText("Decimation [1,1000]")
             if decimationLowerBoundary != \
                                       self._getDecimationWidget().minimum():

@@ -133,7 +133,7 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                    %(self._fromFacade.keys()))
 
     def populateFacadeParams(self):
-        self.info("Populate Facade's parameters")
+        self.debug("Populate Facade's parameters")
         requiresFacadeAdjustments = False
         for field in SignalFields.keys():
             #FIXME: these ifs needs a refactoring
@@ -143,7 +143,7 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                 m = self.readAttr(mAttr)
                 n = self.readAttr(nAttr)
                 if m != None and n != None:
-                    self.info("For signal %s: m = %g, n = %g"%(field,m,n))
+                    self.debug("For signal %s: m = %g, n = %g"%(field,m,n))
                     self._fromFacade[field][SLOPE_] = m
                     self._fromFacade[field][OFFSET_] = n
                 else:
@@ -155,7 +155,7 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                 c = self.readAttr(cAttr)
                 o = self.readAttr(oAttr)
                 if c != None and o != None:
-                    self.info("For signal %s: c = %g, o = %g"%(field,c,o))
+                    self.debug("For signal %s: c = %g, o = %g"%(field,c,o))
                     self._fromFacade[field][COUPLE_] = c
                     self._fromFacade[field][OFFSET_] = o
                 else:
@@ -185,13 +185,15 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                 SignalFields[field][FORMULA_] = formula
                 return True
             elif formula != SignalFields[field][FORMULA_]:
-                self.info("%s formula has changed from '%s' to '%s'"
+                self.debug("%s formula has changed from '%s' to '%s'"
                           %(field,SignalFields[field][FORMULA_],formula))
+                if self.__formulaWithoutSpaces(formula):
+                    raise Exception("Please, don't use spaces in the formula.")
                 if not self.__formulaBeginWith(formula):
-                    raise Exception("Formula has to start with 'y = '.")
+                    raise Exception("Formula has to start with 'y='.")
                 if not self.__formulaHasX(formula):
                     raise Exception("Formula requires at least one time the "\
-                                    "variable 'x'")
+                                    "variable 'x'.")
                     return False
                 if self.hasMandNs(field) and \
                                       not self.__formulaHasMandNs(formula):
@@ -201,6 +203,9 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                                       not self.__formulaHasCandOs(formula):
                     raise Exception("Formula requires the couple tagged as "\
                                     "'c' and the offset with an 'o'.")
+                if self.__formulaCheckPowSymbol(formula):
+                    raise Exception("Please, use python notation '**' for "\
+                                    "power symbol '^'.")
                 try:
                     self.__testFormulaEval(formula,field)
                 except SyntaxError,e:
@@ -211,25 +216,29 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                 SignalFields[field][FORMULA_] = formula
                 return True
             else:
-                self.info("%s formula hasn't change, still '%s'"
+                self.debug("%s formula hasn't change, still '%s'"
                           %(field,formula))
                 return False
 
+    def __formulaWithoutSpaces(self,formula):
+        return formula.count(' ')
     def __formulaBeginWith(self,formula):
-        return formula.startswith("y =")
+        return formula.startswith("y=")
     def __formulaHasX(self,formula):
         return bool(formula.count('x'))
     def __formulaHasMandNs(self,formula):
         return bool(formula.count('m')) and bool(formula.count('n'))
     def __formulaHasCandOs(self,formula):
         return bool(formula.count('c')) and bool(formula.count('o'))
+    def __formulaCheckPowSymbol(self,formula):
+        return formula.count('^')
     def __testFormulaEval(self,formula,field):
         if self.__formulaHasMandNs(formula):
             m = 1;n = 0
         elif self.__formulaHasCandOs(formula):
-            c = 1;n = 0
+            c = 1;o = 0
         x = np.array([0.,1,2,3])#very simple test vector
-        formula.split('=')[1].strip()
+        formula = formula.split('=')[1].strip()
         res = eval(formula)
 
     def readAttr(self,attrName):
@@ -249,7 +258,7 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
     def doFacadeAdjusments(self):
         if self._facadeAdjustments == None:
             self._facadeAdjustments = facadeAdjustments()
-        self._facadeAdjustments.setWindowTitle("Facade's parameters")
+        self._facadeAdjustments.setWindowTitle("Fit parameters")
         #connect signals for the buttons
         Qt.QObject.connect(self.getResetButton(),
                        Qt.SIGNAL('clicked(bool)'),self.getFacadeValues2widgets)
@@ -259,6 +268,10 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                            Qt.SIGNAL('clicked(bool)'),self.applyFacade)
         Qt.QObject.connect(self.getCancelButton(),
                            Qt.SIGNAL('clicked(bool)'),self.cancelFacade)
+        Qt.QObject.connect(self.getSaveButton(),
+                           Qt.SIGNAL('clicked(bool)'),self.saveFormValues)
+        Qt.QObject.connect(self.getLoadButton(),
+                           Qt.SIGNAL('clicked(bool)'),self.loadFormValues)
         #connect signals for the QLineEdits and the QSpinBoxes
         #to apply when press enter
         listOfLineEdits = [self._facadeAdjustments._ui.ShuntImpedanceValue,
@@ -288,7 +301,7 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
         return self._facadeAdjustments._ui.buttonBox.\
                                            button(QtGui.QDialogButtonBox.Apply)
     def applyFacade(self):
-        #self.info("New parameters adjusted by hand by the user!")
+        self.info("New parameters adjusted by hand by the user!")
         hasAnyoneChanged = False
         formulaExceptions = {}
         for field in self._fromFacade.keys():
@@ -298,15 +311,15 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                 n = float(self._facadeAttrWidgets[field][OFFSET_].value())
                 if self._fromFacade[field][SLOPE_] != m or \
                    self._fromFacade[field][OFFSET_] != n:
-                    self.info("Changes from the user, signal %s: "\
-                              "m = %g, n = %g"%(field,m,n))
+                    self.debug("Changes from the user, signal %s: "\
+                               "m = %g, n = %g"%(field,m,n))
                     self._fromFacade[field][SLOPE_] = m
                     self._fromFacade[field][OFFSET_] = n
                     hasAnyoneChanged = True
                 try:
                     if self._verifyFormula(field):
                         hasAnyoneChanged = True
-                    self.info("%s formula ok"%(field))
+                    self.debug("%s formula ok"%(field))
                 except Exception,e:
                     formulaExceptions[field] = e
                     self.warning("%s formula exception: %s"%(field,e))
@@ -315,22 +328,22 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                 o = float(self._facadeAttrWidgets[field][OFFSET_].value())
                 if self._fromFacade[field][COUPLE_] != c or \
                    self._fromFacade[field][OFFSET_] != o:
-                    self.info("Changes from the user, signal %s: "\
-                              "c = %g, o = %g"%(field,c,o))
+                    self.debug("Changes from the user, signal %s: "\
+                               "c = %g, o = %g"%(field,c,o))
                     self._fromFacade[field][COUPLE_] = c
                     self._fromFacade[field][OFFSET_] = o
                     hasAnyoneChanged = True
                 try:
                     if self._verifyFormula(field):
                         hasAnyoneChanged = True
-                    self.info("%s formula ok"%(field))
+                    self.debug("%s formula ok"%(field))
                 except Exception,e:
                     formulaExceptions[field] = e
                     self.warning("%s formula exception: %s"%(field,e))
                     traceback.print_exc()
         ShuntImpedance =self._facadeAdjustments._ui.ShuntImpedanceValue.text()
         if ShuntImpedance != self.getShuntImpedance():
-            self.info("Changed the Shunt Impedance from %s to %s"
+            self.debug("Changed the Shunt Impedance from %s to %s"
                       %(self.getShuntImpedance(),ShuntImpedance))
             try:
                 eval(ShuntImpedance)
@@ -436,4 +449,82 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
     
     def getShuntImpedance(self):
         return self._shuntImpedance
+
+    def getSaveButton(self):
+        return self._facadeAdjustments._ui.saveButton
+    
+    def saveFormValues(self):
+        fileName = self.getFile2Save()
+        if len(fileName) == 0:
+            return
+        toSave = ""
+        ShuntImpedance = self._facadeAdjustments._ui.ShuntImpedanceValue.text()
+        toSave = ''.join("ShuntImpedance:%s\n"%(ShuntImpedance))
+        for vble in self._facadeAttrWidgets.keys():
+            for element in self._facadeAttrWidgets[vble].keys():
+                widget = self._facadeAttrWidgets[vble][element]
+                if type(widget) == QtGui.QLineEdit:
+                    value = widget.text()
+                elif type(widget) == QtGui.QDoubleSpinBox:
+                    value = widget.value()
+                else:
+                    value = None
+                toSave = ''.join("%s%s/%s:%s\n"%(toSave,vble,element,value))
+        with open(fileName,'w') as file:
+            file.write(toSave)
+        self.info("Save parameter values to %s"%(fileName))
+
+    def getLoadButton(self):
+        return self._facadeAdjustments._ui.loadButton
+
+    def loadFormValues(self):
+        self.info("Load parameter values")
+        fileName = self.getFile2Load()
+        if len(fileName) == 0:
+            return
+        with open(fileName,'r') as file:
+            for line in file.readlines():
+                if line[-1] == '\n':
+                    line = line[:-1]#remove \n
+                self.debug("from %s readline: %s"%(fileName,line))
+                if line.startswith('#'):
+                    pass#just ignore the lines that starts with '#'
+                elif line.count(':') == 1:
+                    vble,value = line.split(':')
+                    value.strip()
+                    if vble.count('/') == 1:
+                        vble,element = vble.split('/')
+                        if self._facadeAttrWidgets.has_key(vble) and \
+                                self._facadeAttrWidgets[vble].has_key(element):
+                            widget = self._facadeAttrWidgets[vble][element]
+                            if type(widget) == QtGui.QLineEdit:
+                                widget.setText(str(value))
+                            elif type(widget) == QtGui.QDoubleSpinBox:
+                                widget.setValue(float(value))
+                            self.debug("on widget %s/%s = '%s'"
+                                       %(vble,element,value))
+                        else:
+                            self.error("Not understood %s/%s (%s)"
+                                       %(vble,element,value))
+                    else:#there is only the shuntImpedance case for this
+                        if vble == 'ShuntImpedance':
+                            self._facadeAdjustments._ui.ShuntImpedanceValue.\
+                                                                 setText(value)
+                            self.debug("on ShuntImpedance widget = %s"%(value))
+                        else:
+                            self.error("Unknown variable %s (%s)"%(vble,value))
+                else:
+                    self.error("Unknown line %s"%(line))
+
+    def getFile2Save(self):
+        dialogTitle = "Save lyrtech's FDL parameters file"
+        filters = "DLLFDL configuration (*.dllfdl);;All files (*)"
+        return str(QtGui.QFileDialog.getSaveFileName(self,dialogTitle,
+                                                defaultConfigurations,filters))
+
+    def getFile2Load(self):
+        dialogTitle = "Select lyrtech's FDL parameters file"
+        filters = "DLLFDL configuration (*.dllfdl);;All files (*)"
+        return str(QtGui.QFileDialog.getOpenFileName(self,dialogTitle,
+                                                defaultConfigurations,filters))
 

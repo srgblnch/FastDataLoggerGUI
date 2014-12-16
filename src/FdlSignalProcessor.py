@@ -144,7 +144,7 @@ class SignalProcessor(FdlLogger,Qt.QObject):
             elif self._isFormula(signalName):
                 if self._getFacadesBeamCurrent() == 0 and \
                        SignalFields[signalName][FORMULA_].count('BeamCurrent'):
-                    self.info("Excluding %s because the beamcurrent is 0"
+                    self.debug("Excluding %s because the beamcurrent is 0"
                               %(signalName))
                     if signalName in self._signals.keys():
                         self._signals.pop(signalName)
@@ -163,19 +163,6 @@ class SignalProcessor(FdlLogger,Qt.QObject):
         #      be assumed that there is no loading file from it.
         self.warning("Alert, found %d orphan signals: %s."
                      %(len(orphan),orphan))
-#        if self._getFacadesBeamCurrent() == 0:
-#            # check the beam current to know if there is no beam (current = 0)
-#            # on that case then remove the formula signals that have the 
-#            # beamcurrent as a variable.
-#            self.warning("Beam current is 0, exclude the signals that have "\
-#                         "it in the formula")
-#            for signalName in withFormula:
-#                if SignalFields[signalName][FORMULA_].count('BeamCurrent'):
-#                    withFormula.pop(withFormula.index(signalName))
-#                    self.info("removed %s from the list of formulas"
-#                              %(signalName))
-#        self.info("*** beam current %g == 0: %s"
-#                  %(self._getFacadesBeamCurrent(),self._getFacadesBeamCurrent()==0))
         return {'ready':doneSignals,
                 'facade':facadeFit,
                 FORMULA_:withFormula,
@@ -244,34 +231,34 @@ class SignalProcessor(FdlLogger,Qt.QObject):
             m,n = self._getFacadesMandNs(signal)
             if SignalFields[signal].has_key(FORMULA_):
                 formula = SignalFields[signal][FORMULA_]
-                formula = formula.replace('y = ','')
+                formula = formula.replace('y=','')
                 formula = formula.replace('x',SignalFields[signal][VBLE_])
                 self._signals[signal] = eval(formula,
                                              {'m':m,'n':n},
                                              self._signals)
-                self.info("To evaluate %s, it has been used the formula %s"
+                self.debug("To evaluate %s, it has been used the formula %s"
                           %(signal,formula))
             else:
                 self._signals[signal] = \
                                (self._signals[SignalFields[signal][VBLE_]]*m)+n
-                self.info("To evaluate %s, it has been used the default "\
+                self.debug("To evaluate %s, it has been used the default "\
                           "formula"%(signal))
         elif self._isQuadratic(signal):
             self.info("Calculating quadratic fit on %s signal"%(signal))
             c,o = self._getFacadesCandOs(signal)
             if SignalFields[signal].has_key(FORMULA_):
                 formula = SignalFields[signal][FORMULA_]
-                formula = formula.replace('y = ','')
+                formula = formula.replace('y=','')
                 formula = formula.replace('x',SignalFields[signal][VBLE_])
                 self._signals[signal] = eval(formula,
                                              {'c':c,'o':o},
                                              self._signals)
-                self.info("To evaluate %s, it has been used the formula %s"
+                self.debug("To evaluate %s, it has been used the formula %s"
                           %(signal,formula))
             else:
                 self._signals[signal] = \
                     (self._signals[SignalFields[signal][VBLE_]]**2/1e8/10**c)+o
-                self.info("To evaluate %s, it has been used the default "\
+                self.debug("To evaluate %s, it has been used the default "\
                           "formula"%(signal))
         elif self._isFormula(signal):
             self.info("Calculating %s using formula '%s'"
@@ -279,7 +266,7 @@ class SignalProcessor(FdlLogger,Qt.QObject):
             try:
                 beamCurrent = self._getFacadesBeamCurrent()
                 ShuntImpedance = self._getFacadesShuntImpedance()
-                self.info("beamCurrent = %g; ShuntImpedance = %s"
+                self.debug("beamCurrent = %g; ShuntImpedance = %s"
                            %(beamCurrent,ShuntImpedance))
                 ShuntImpedance = eval(ShuntImpedance)
                 self._signals[signal] = eval(SignalFields[signal][FORMULA_],

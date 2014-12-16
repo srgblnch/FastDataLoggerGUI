@@ -37,6 +37,9 @@ import types
 import resource
 import gc
 
+sandbox = '/data'
+defaultConfigurations = "%s/RF/FDL_Lyrtech"%(sandbox)
+
 class MemoryProfile:
     def __init__(self):
         self._unitsSort = ['B','KB','MB','GB']

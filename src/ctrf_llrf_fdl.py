@@ -100,7 +100,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
                        "the first element of the 'File' menu")
         self.prepareWidgets()
         #adjustments on the facade configuration
-        self.facadeAction = Qt.QAction('Facade fits',self)
+        self.facadeAction = Qt.QAction('Fit parameters',self)
         self.facadeAction.setEnabled(False)
         try:
             before = self.toolsMenu.actions()[0]
@@ -346,7 +346,7 @@ class MainWindow(TaurusMainWindow,FdlLogger):
         self.ui.progressBar.setValue(100)
         self._enableWidgets(True)
     def showMessage(self,msg):
-        self.info("Print in the statusBar the message: '%s'"%(msg))
+        self.debug("Print in the statusBar the message: '%s'"%(msg))
         self.statusBar().showMessage(msg)
     def parsingStatusMessage(self):
         if self._loopsParser != None and self._diagParser != None:
@@ -525,9 +525,6 @@ class MainWindow(TaurusMainWindow,FdlLogger):
     #--- done memory issues managing area
     ####
 
-sandbox = '/data'
-defaultConfigurations = "%s/RF/FDL_Lyrtech"%(sandbox)
-
 #FACADE's hackishes:
 # facade's device instances naming pattern:
 #   - {longLocation}_RF_FACADE-{plant}[-02]
@@ -559,6 +556,9 @@ class PlantTranslator:
     @property
     def shortName(self):
         return self._shortName
+    @property
+    def location(self):
+        return self._location
     @property
     def completeName(self):
         return "%s%s"%(self._location,self._inSectorPlant)
@@ -646,6 +646,8 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         fileName = str(QtGui.QFileDialog.getOpenFileName(self,dialogTitle,
                                                 defaultConfigurations,filters))
         self.debug("Selected: %s"%(fileName))
+        if len(fileName)==0:
+            return
         shortName = fileName.rsplit('/',1)[1].split('_')[1]
         self._plant = PlantTranslator(shortName)
         if not self._plant.completeName in knownPlants:
@@ -680,7 +682,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
                                                                setEnabled(True)
 
     def selectPlant(self,plant):
-        self.info("Selecting the plant: %s"%(str(plant)))
+        self.debug("Selecting the plant: %s"%(str(plant)))
         currentText = self.panel().locationCombo.currentText()
         currentIndex = self.panel().locationCombo.currentIndex()
         self.debug("Current combo text: %s at %d"
@@ -691,22 +693,24 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
             pass#TODO: warn the user about a location change
         elif newIndex == -1: #doesn't exist
             self.panel().locationCombo.addItem(str(plant))
-        self._plant= PlantTranslator(str(plant))
+        self._plant = PlantTranslator(str(plant))
         self.panel().locationCombo.setCurrentIndex(newIndex)
         self.searchFacade()
-        #it cannot be smart enough to know that
-
+        #it cannot be smart enough to know the beam current in the machine,
+        #but it can be sure there is no beam in the rf lab
+        if self._plant.location.startswith('WR'):
+            self.setBeamCurrent(0.0)
     def searchFacade(self):
         self.debug("Given the known plants (%s) and the current selected "\
                   "plant (%s) which of the found facades (%s) can be?"
                   %(knownPlants,self._plant.completeName,self._facadesFound))
         if self._plant.facadeInstanceName in self._facadesFound:
-            self.info("Match found in facade instances: %s"
+            self.debug("Match found in facade instances: %s"
                       %(self._plant.facadeInstanceName))
             newIndex = self.panel().facadeCombo.findText(\
                                                 self._plant.facadeInstanceName)
         elif self._plant.facadeInstanceName+'-01' in self._facadesFound:
-            self.info("Match found adding a sequence suffix: %s-01"
+            self.debug("Match found adding a sequence suffix: %s-01"
                       %(self._plant.facadeInstanceName))
             newIndex = self.panel().facadeCombo.findText(\
                                           self._plant.facadeInstanceName+'-01')

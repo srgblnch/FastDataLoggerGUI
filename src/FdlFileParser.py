@@ -111,7 +111,7 @@ class FdlFile(FdlLogger,Qt.QObject):
         except:#backward compatibility to numpy 1.3.0
             self._iterator = nditer(self._values)
         self._offset = self._nextSeparator()
-        self.info("First tag found in position %d. Sets size %d "\
+        self.warning("First tag found in position %d. Sets size %d "\
                   "(including the separator)"
                   %(self._offset,self._nsignals+1))
         self.memory()
@@ -201,7 +201,7 @@ class FdlFile(FdlLogger,Qt.QObject):
                 if self._percentage != int((current*100)/total):
                     self._percentage = int((current*100)/total)
                     #if True: #self._iterator.iterindex%1e6 == self._offset:
-                    self.info("we are at %d%% (%d of %d with %d offset)"
+                    self.debug("we are at %d%% (%d of %d with %d offset)"
                               %(self._percentage,self._iterator.iterindex,
                                 self._iterator.itersize,self._offset))
                     self.sizeofSignals()
@@ -275,7 +275,7 @@ class FdlFile(FdlLogger,Qt.QObject):
                 Isignal = self._signals[Itag]
                 Qtag = SignalFields[keyName][Q_]
                 Qsignal = self._signals[Qtag]
-                self.info("Signal %s has I (%s) and Q (%s)"%(keyName,Itag,Qtag))
+                self.debug("Signal %s has I (%s) and Q (%s)"%(keyName,Itag,Qtag))
                 self._signals[keyName] = np.sqrt((Isignal**2)+(Qsignal**2))
         self.debug("Post-processed signal set (%d): %s"
                    %(len(self._signals.keys()),self._signals.keys()))

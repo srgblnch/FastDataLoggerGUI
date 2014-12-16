@@ -223,18 +223,18 @@ newAmplitude('MO','MO_I','MO_Q')
 #                                             offsetName='CAV_VOLT_n')
 fittedSignal('CavVolt_kV',vbleName='CavVolt',slopeName='CAV_VOLT_m',
                                              offsetName='CAV_VOLT_n',
-             #formula='y = x*m+n'
+             #formula='y=x*m+n'
              )
 fittedSignal('FwCav_kW',vbleName='FwCav',coupleName='CAV_FW_couple',
                                          offsetName='CAV_FW_offset',
-             formula='y = x**2/100*c+o')
+             formula='y=x**2/100*c+o')
 fittedSignal('RvCav_kW',vbleName='RvCav',coupleName='CAV_RV_couple',
                                          offsetName='CAV_RV_offset',
-             #formula='y = x**2/1e8/10**c+o'
+             #formula='y=x**2/1e8/10**c+o'
              )
 fittedSignal('FwLoad_kW',vbleName='FwLoad',coupleName='LOAD_FW_couple',
                                            offsetName='LOAD_FW_offset',
-             #formula='y = x**2/1e8/10**c+o'
+             #formula='y=x**2/1e8/10**c+o'
              )
 
 #formula PDisCav_kW = (CavVolt_kV**2)/(10e6*2*3.3e8) was wrong
