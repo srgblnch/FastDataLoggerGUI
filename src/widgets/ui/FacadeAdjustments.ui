@@ -339,7 +339,7 @@
        <item row="4" column="1">
         <widget class="QGroupBox" name="RvCav">
          <property name="title">
-          <string>RwCav_kW [x = RwCav]</string>
+          <string>RvCav_kW [x = RvCav]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
           <item row="1" column="3">

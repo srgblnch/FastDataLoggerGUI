@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'widgets/ui/FacadeAdjustments.ui'
 #
-# Created: Tue Dec 16 09:03:18 2014
+# Created: Fri Mar 27 12:44:30 2015
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -212,7 +212,7 @@ class Ui_facadeAdjustments(object):
         facadeAdjustments.setWindowTitle(QtGui.QApplication.translate("facadeAdjustments", "Form", None, QtGui.QApplication.UnicodeUTF8))
         self.saveButton.setText(QtGui.QApplication.translate("facadeAdjustments", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.loadButton.setText(QtGui.QApplication.translate("facadeAdjustments", "Load", None, QtGui.QApplication.UnicodeUTF8))
-        self.backupLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "Backup files: ", None, QtGui.QApplication.UnicodeUTF8))
+        self.backupLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "Parameters file: ", None, QtGui.QApplication.UnicodeUTF8))
         self.ShuntImpedanceLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "Shunt Impedance", None, QtGui.QApplication.UnicodeUTF8))
         self.ShuntImpedanceValue.setText(QtGui.QApplication.translate("facadeAdjustments", "2*3.3*1e6", None, QtGui.QApplication.UnicodeUTF8))
         self.cavityVolts_kV.setTitle(QtGui.QApplication.translate("facadeAdjustments", "CavVolt_kV [x = CavVolt]", None, QtGui.QApplication.UnicodeUTF8))
@@ -223,7 +223,7 @@ class Ui_facadeAdjustments(object):
         self.FwCavOLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "offset", None, QtGui.QApplication.UnicodeUTF8))
         self.FwCavCLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "couple", None, QtGui.QApplication.UnicodeUTF8))
         self.FwCavFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y=x**2/1e5/10**c+o", None, QtGui.QApplication.UnicodeUTF8))
-        self.RvCav.setTitle(QtGui.QApplication.translate("facadeAdjustments", "RwCav_kW [x = RwCav]", None, QtGui.QApplication.UnicodeUTF8))
+        self.RvCav.setTitle(QtGui.QApplication.translate("facadeAdjustments", "RvCav_kW [x = RvCav]", None, QtGui.QApplication.UnicodeUTF8))
         self.RvCavCLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "couple", None, QtGui.QApplication.UnicodeUTF8))
         self.RvCavOLabel.setText(QtGui.QApplication.translate("facadeAdjustments", "offset", None, QtGui.QApplication.UnicodeUTF8))
         self.RvCavFormula.setText(QtGui.QApplication.translate("facadeAdjustments", "y=x**2/1e8/10**c+o", None, QtGui.QApplication.UnicodeUTF8))

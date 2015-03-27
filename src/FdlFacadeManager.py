@@ -350,6 +350,11 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
             except SyntaxError,e:
                 formulaExceptions['ShuntImpedance'] = "Cannot be evaluated, "\
                                                       "syntax error."
+            except OverflowError,e:
+                formulaExceptions['ShuntImpedance'] = "%s."%(e[1])
+            except Exception,e:
+                formulaExceptions['ShuntImpedance'] = "Cannot be evaluated, "\
+                                                      "due to: %s"%(e)
             else:
                 self.setShuntImpedance(ShuntImpedance)
                 hasAnyoneChanged = True
@@ -386,6 +391,7 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                                            button(QtGui.QDialogButtonBox.Reset)
 
     def getFacadeValues2widgets(self):
+        self.populateFacadeParams()
         #use _fromFacade to populate widgets
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
