@@ -295,9 +295,9 @@ formulaSignal('MO_Phase','rad2deg(arctan(MO_Q,MO_I))',
 #  correct interpretation of the value in the processSignalSet() of the
 #  FdlFileParser class when reading signal sets from files.
 ## With this is made previously, the if is not required on the formulaSignal():
-formulaSignal('Tuning_Dephase','Dephase/512*360',['Dephase'])
-formulaSignal('Tuning_CavPhase','CavPhase/512*360',['CavPhase'])
-formulaSignal('Tuning_FwCavPhase','FwCavPhase/512*360',['FwCavPhase'])
+#formulaSignal('Tuning_Dephase','Dephase/512*360',['Dephase'])
+#formulaSignal('Tuning_CavPhase','CavPhase/512*360',['CavPhase'])
+#formulaSignal('Tuning_FwCavPhase','FwCavPhase/512*360',['FwCavPhase'])
 
 #--- Diag signals
 newSignal('SSA1Input_I','SSA1Input_I')
@@ -361,9 +361,9 @@ add2gui('ErroAccum_I',      Loops1,'middleRight', Y2_,'Yellow')
 add2gui('ErroAccum_Q',      Loops1,'middleRight', Y2_,'Cyan')
 add2gui('FwCav_kW',         Loops1,'bottomLeft',  Y1_,'Blue')
 add2gui('FwCav_Phase',      Loops1,'bottomLeft',  Y2_,'Cyan')
-add2gui('Tuning_Dephase',   Loops1,'bottomRight', Y1_,'Red')
-add2gui('Tuning_CavPhase',  Loops1,'bottomRight', Y1_,'Blue')
-add2gui('Tuning_FwCavPhase',Loops1,'bottomRight', Y1_,'Green')
+add2gui('Dephase',          Loops1,'bottomRight', Y1_,'Red')
+add2gui('CavPhase',         Loops1,'bottomRight', Y1_,'Blue')
+add2gui('FwCavPhase',       Loops1,'bottomRight', Y1_,'Green')
 ##Loops2
 add2gui('FwIOT1_I',         Loops2,'topLeft',     Y1_,'Red')
 add2gui('FwIOT1_Q',         Loops2,'topLeft',     Y1_,'Blue')
