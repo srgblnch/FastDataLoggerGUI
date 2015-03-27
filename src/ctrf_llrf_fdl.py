@@ -546,10 +546,13 @@ class PlantTranslator(TaurusBaseComponent):
         self.call__init__(TaurusBaseComponent, name, parent=parent,
                           designMode=False)
         self._shortName = shortName
-        if len(shortName) == 3:
+        if len(shortName) == 5 and shortName.startswith('SR'):
+            self._location = shortName[:4]
+            self._inSectorPlant = shortName[-1]
+        elif len(shortName) == 3:
             if 'SR%s'%(shortName[:2]) in PlantsDescriptor.keys():
                 self._location = 'SR%s'%(shortName[:2])
-                self._inSectorPlant = shortName[-1:]
+                self._inSectorPlant = shortName[-1]
             elif shortName[:2] in PlantsDescriptor.keys():
                 self._location = shortName[:2]
                 self._inSectorPlant = '%s'%shortName[2]
@@ -632,6 +635,9 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
                   taurus.Database().getServerNameInstances(FACADES_SERVERNAME)]
         self._facadesFound.sort()
         self.panel().facadeCombo.addItems(['']+self._facadesFound)
+        Qt.QObject.connect(self.panel().facadeCombo,
+                           Qt.SIGNAL('editTextChanged(QString)'),
+                           self.selectFacade)
         self.info("Found %d facades: %s"
                   %(len(self._facadesFound),self._facadesFound))
         #segment for the beam current
@@ -687,24 +693,41 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
                                                                setEnabled(True)
 
     def selectPlant(self,plant):
-        self.debug("Selecting the plant: %s"%(str(plant)))
-        currentText = self.panel().locationCombo.currentText()
-        currentIndex = self.panel().locationCombo.currentIndex()
-        self.debug("Current combo text: %s at %d"
-                  %(currentText,currentIndex))
-        newIndex = self.panel().locationCombo.findText(str(plant))
-        if newIndex != currentIndex and currentText != '':
-            self.warning("Location has change!! (from %d to %d)"
-                         %(currentIndex,newIndex))
-            pass#TODO: warn the user about a location change
-        elif newIndex == -1: #doesn't exist
-            self.panel().locationCombo.addItem(str(plant))
-        self.panel().locationCombo.setCurrentIndex(newIndex)
+        plant = str(plant)
+        self.debug("Selecting the plant: %s"%(plant))
+        self.__comboModification(self.panel().locationCombo,plant)
+        if self._plant == None or plant != self._plant.completeName:
+            self._plant = PlantTranslator(plant)
         self.searchFacade()
         #it cannot be smart enough to know the beam current in the machine,
         #but it can be sure there is no beam in the rf lab
         if self._plant.location.startswith('WR'):
             self.setBeamCurrent(0.0)
+    def selectFacade(self,facade):
+        self.debug("Selecting the facade: %s"%str(facade))
+        self.__comboModification(self.panel().facadeCombo,str(facade))
+        selectedFacade = self.panel().facadeCombo.currentText()
+        if selectedFacade == '':
+            self.warningMsg("Facade Selection",
+                            "There is no Facade instance selected!")
+        elif self._plant != None and \
+                              self._plant.facadeInstanceName != selectedFacade:
+            self.warningMsg("Facade Selection","The Selected Facade "\
+                            "doesn't correspond with the plant.")
+    def __comboModification(self,combo,name):
+        currentText = combo.currentText()
+        currentIndex = combo.currentIndex()
+        self.debug("Current %s combo text '%s' as index %d"
+                   %(name,currentText,currentIndex))
+        newIndex = combo.findText(name)
+        if newIndex != currentIndex and currentText != '':
+            self.warning("%s combo has changed!! (from %d to %d)"
+                         %(name,currentIndex,newIndex))
+            pass#TODO: warn the user about a location change
+        elif newIndex == -1: #doesn't exist
+            combo.addItem(str(name))
+        combo.setCurrentIndex(newIndex)
+
     def searchFacade(self):
         self.debug("Given the known plants (%s) and the current selected "\
                   "plant (%s) which of the found facades (%s) can be?"
@@ -726,7 +749,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
             newIndex = -1
         #Alert the user in case something was already selected (by the user
         #or perhaps the different location plant of another file
-        currentText = self.panel().locationCombo.currentText()
+        currentText = self.panel().facadeCombo.currentText()
         currentIndex = self.panel().facadeCombo.currentIndex()
         if newIndex != currentIndex and currentText != '':
             self.warning("facade selection has change!!")
@@ -740,7 +763,7 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
         selection = {'Loops':self._loopsFile,
                      'Diag':self._diagFile,
                      'plant':self._plant.completeName,
-                     'facade':self._plant.facadeInstanceName,
+                     'facade':self.panel().facadeCombo.currentText(),
                      'beamCurrent':self.getBeamCurrent()}
 #        selection = {}
 #        self.debug("Selection: Loops = %s"%(self._loopsFile))
