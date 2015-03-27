@@ -540,8 +540,11 @@ knownPlants = ['%s%s'%(location,plant) for location in PlantsDescriptor.keys()\
                                        for plant in PlantsDescriptor[location]]
 knownPlants.sort()
 
-class PlantTranslator:
-    def __init__(self,shortName):
+class PlantTranslator(TaurusBaseComponent):
+    def __init__(self,shortName,parent=None):
+        name = "PlantTranslator"
+        self.call__init__(TaurusBaseComponent, name, parent=parent,
+                          designMode=False)
         self._shortName = shortName
         if len(shortName) == 3:
             if 'SR%s'%(shortName[:2]) in PlantsDescriptor.keys():
@@ -553,6 +556,8 @@ class PlantTranslator:
         else:
             self._location = shortName
             self._inSectorPlant = ''
+        self.debug("location: %s, insector %s"
+                   %(self._location,self._inSectorPlant))
     @property
     def shortName(self):
         return self._shortName
@@ -689,11 +694,11 @@ class LoadFileDialog(Qt.QDialog,TaurusBaseComponent):
                   %(currentText,currentIndex))
         newIndex = self.panel().locationCombo.findText(str(plant))
         if newIndex != currentIndex and currentText != '':
-            self.warning("Location has change!!")
+            self.warning("Location has change!! (from %d to %d)"
+                         %(currentIndex,newIndex))
             pass#TODO: warn the user about a location change
         elif newIndex == -1: #doesn't exist
             self.panel().locationCombo.addItem(str(plant))
-        self._plant = PlantTranslator(str(plant))
         self.panel().locationCombo.setCurrentIndex(newIndex)
         self.searchFacade()
         #it cannot be smart enough to know the beam current in the machine,
