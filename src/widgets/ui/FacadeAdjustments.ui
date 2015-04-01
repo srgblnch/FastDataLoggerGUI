@@ -158,6 +158,16 @@
           <string>CavVolt_kV [x = CavVolt]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_5">
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="cavityVolts_kV_MValue">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>22</height>
+             </size>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="4">
            <widget class="QLabel" name="cavityVolts_kV_NLabel">
             <property name="text">
@@ -165,7 +175,7 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="6">
+          <item row="1" column="7">
            <spacer name="cavityVolts_kV_RightSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -182,26 +192,6 @@
            <widget class="QLabel" name="cavityVolts_kV_MLabel">
             <property name="text">
              <string>slope</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="cavityVolts_kV_MValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="5">
-           <widget class="QDoubleSpinBox" name="cavityVolts_kV_NValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
             </property>
            </widget>
           </item>
@@ -231,13 +221,23 @@
             </property>
            </spacer>
           </item>
-          <item row="0" column="1" colspan="5">
+          <item row="0" column="1" colspan="6">
            <widget class="QLineEdit" name="cavityVolts_kV_Formula">
             <property name="text">
              <string>y=x*m+n</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="5">
+           <widget class="QLineEdit" name="cavityVolts_kV_NValue">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>22</height>
+             </size>
             </property>
            </widget>
           </item>
@@ -250,6 +250,16 @@
           <string>FwCav_kW [x = FwCav]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="FwCavCValue">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>22</height>
+             </size>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="4">
            <widget class="QLabel" name="FwCavOLabel">
             <property name="text">
@@ -270,14 +280,7 @@
             </property>
            </spacer>
           </item>
-          <item row="1" column="1">
-           <widget class="QLabel" name="FwCavCLabel">
-            <property name="text">
-             <string>couple</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="6">
+          <item row="1" column="7">
            <spacer name="FwCavRightSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -290,23 +293,10 @@
             </property>
            </spacer>
           </item>
-          <item row="1" column="5">
-           <widget class="QDoubleSpinBox" name="FwCavOValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="FwCavCValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
+          <item row="1" column="1">
+           <widget class="QLabel" name="FwCavCLabel">
+            <property name="text">
+             <string>couple</string>
             </property>
            </widget>
           </item>
@@ -323,13 +313,23 @@
             </property>
            </spacer>
           </item>
-          <item row="0" column="1" colspan="5">
+          <item row="0" column="1" colspan="6">
            <widget class="QLineEdit" name="FwCavFormula">
             <property name="text">
              <string>y=x**2/1e5/10**c+o</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="5">
+           <widget class="QLineEdit" name="FwCavOValue">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>22</height>
+             </size>
             </property>
            </widget>
           </item>
@@ -342,6 +342,16 @@
           <string>RvCav_kW [x = RvCav]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="RvCavCValue">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>22</height>
+             </size>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="3">
            <spacer name="RvCavCentralSpacer">
             <property name="orientation">
@@ -355,7 +365,7 @@
             </property>
            </spacer>
           </item>
-          <item row="1" column="6">
+          <item row="1" column="7">
            <spacer name="RvCavRightSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -372,16 +382,6 @@
            <widget class="QLabel" name="RvCavCLabel">
             <property name="text">
              <string>couple</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="RvCavCValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
             </property>
            </widget>
           </item>
@@ -405,23 +405,23 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="5">
-           <widget class="QDoubleSpinBox" name="RvCavOValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1" colspan="5">
+          <item row="0" column="1" colspan="6">
            <widget class="QLineEdit" name="RvCavFormula">
             <property name="text">
              <string>y=x**2/1e8/10**c+o</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="5">
+           <widget class="QLineEdit" name="RvCavOValue">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>22</height>
+             </size>
             </property>
            </widget>
           </item>
@@ -434,6 +434,16 @@
           <string>FwLoad_kW [x = FwLoad]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_8">
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="FwLoadCValue">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>22</height>
+             </size>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="3">
            <spacer name="FwLoadCentralSpacer">
             <property name="orientation">
@@ -447,20 +457,23 @@
             </property>
            </spacer>
           </item>
+          <item row="1" column="7">
+           <spacer name="FwLoadRightSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>21</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
           <item row="1" column="1">
            <widget class="QLabel" name="FwLoadCLabel">
             <property name="text">
              <string>couple</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="FwLoadCValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
             </property>
            </widget>
           </item>
@@ -484,36 +497,23 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="6">
-           <spacer name="FwLoadRightSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>21</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="1" column="5">
-           <widget class="QDoubleSpinBox" name="FwLoadOValue">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="singleStep">
-             <double>0.000100000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1" colspan="5">
+          <item row="0" column="1" colspan="6">
            <widget class="QLineEdit" name="FwLoadFormula">
             <property name="text">
              <string>y=x**2/1e8/10**c+o</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="5">
+           <widget class="QLineEdit" name="FwLoadOValue">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>22</height>
+             </size>
             </property>
            </widget>
           </item>
@@ -548,14 +548,6 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>cavityVolts_kV_MValue</tabstop>
-  <tabstop>cavityVolts_kV_NValue</tabstop>
-  <tabstop>FwCavCValue</tabstop>
-  <tabstop>FwCavOValue</tabstop>
-  <tabstop>RvCavCValue</tabstop>
-  <tabstop>RvCavOValue</tabstop>
-  <tabstop>FwLoadCValue</tabstop>
-  <tabstop>FwLoadOValue</tabstop>
   <tabstop>buttonBox</tabstop>
   <tabstop>scrollArea</tabstop>
  </tabstops>

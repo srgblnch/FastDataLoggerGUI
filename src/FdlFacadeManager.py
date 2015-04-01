@@ -84,7 +84,7 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                  OFFSET_:self._facadeAdjustments._ui.FwLoadOValue,
                  FORMULA_:self._facadeAdjustments._ui.FwLoadFormula},
             }
-        self._prepareFacadeWidgets()
+        #self._prepareFacadeWidgets()
         try:
             dServerName = str('dserver/'+\
                               FACADES_SERVERNAME+'/'+\
@@ -104,17 +104,17 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
     def instanceName(self):
         return self._facadeInstanceName
 
-    def _prepareFacadeWidgets(self):
-        for element in self._facadeAttrWidgets.keys():
-            for parameter in [SLOPE_,COUPLE_,OFFSET_]:
-                try:
-                    if self._facadeAttrWidgets[element].has_key(parameter):
-                        widget = self._facadeAttrWidgets[element][parameter]
-                        widget.setRange(-100,100)
-                except Exception,e:
-                    print("\n"*10)
-                    self.error("Exception %s"%(e))
-                    print("\n"*10)
+#    def _prepareFacadeWidgets(self):
+#        for element in self._facadeAttrWidgets.keys():
+#            for parameter in [SLOPE_,COUPLE_,OFFSET_]:
+#                try:
+#                    if self._facadeAttrWidgets[element].has_key(parameter):
+#                        widget = self._facadeAttrWidgets[element][parameter]
+#                        widget.setRange(-100,100)
+#                except Exception,e:
+#                    print("\n"*10)
+#                    self.error("Exception %s"%(e))
+#                    print("\n"*10)
 
     def _prepareFacadeParams(self):
         self._fromFacade = {}
@@ -278,11 +278,8 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                            self._facadeAdjustments._ui.cavityVolts_kV_Formula,
                            self._facadeAdjustments._ui.FwCavFormula,
                            self._facadeAdjustments._ui.RvCavFormula,
-                           self._facadeAdjustments._ui.FwLoadFormula]
-        for widget in listOfLineEdits:
-            Qt.QObject.connect(widget,\
-                               Qt.SIGNAL('returnPressed()'),self.applyFacade)
-        listOfSpinBoxes = [self._facadeAdjustments._ui.cavityVolts_kV_MValue,
+                           self._facadeAdjustments._ui.FwLoadFormula,
+                           self._facadeAdjustments._ui.cavityVolts_kV_MValue,
                            self._facadeAdjustments._ui.cavityVolts_kV_NValue,
                            self._facadeAdjustments._ui.FwCavCValue,
                            self._facadeAdjustments._ui.FwCavOValue,
@@ -290,9 +287,20 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                            self._facadeAdjustments._ui.RvCavOValue,
                            self._facadeAdjustments._ui.FwLoadCValue,
                            self._facadeAdjustments._ui.FwLoadOValue]
-        for widget in listOfSpinBoxes:
+        for widget in listOfLineEdits:
             Qt.QObject.connect(widget,\
-                               Qt.SIGNAL('editingFinished()'),self.applyFacade)
+                               Qt.SIGNAL('returnPressed()'),self.applyFacade)
+#        listOfSpinBoxes = [#self._facadeAdjustments._ui.cavityVolts_kV_MValue,
+#                           self._facadeAdjustments._ui.cavityVolts_kV_NValue,
+#                           self._facadeAdjustments._ui.FwCavCValue,
+#                           self._facadeAdjustments._ui.FwCavOValue,
+#                           self._facadeAdjustments._ui.RvCavCValue,
+#                           self._facadeAdjustments._ui.RvCavOValue,
+#                           self._facadeAdjustments._ui.FwLoadCValue,
+#                           self._facadeAdjustments._ui.FwLoadOValue]
+#        for widget in listOfSpinBoxes:
+#            Qt.QObject.connect(widget,\
+#                               Qt.SIGNAL('editingFinished()'),self.applyFacade)
 
         self.getFacadeValues2widgets()
         self._facadeAdjustments.show()
@@ -307,8 +315,8 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
         for field in self._fromFacade.keys():
             #FIXME: these ifs needs a refactoring
             if self.hasMandNs(field):
-                m = float(self._facadeAttrWidgets[field][SLOPE_].value())
-                n = float(self._facadeAttrWidgets[field][OFFSET_].value())
+                m = float(self._facadeAttrWidgets[field][SLOPE_].text())
+                n = float(self._facadeAttrWidgets[field][OFFSET_].text())
                 if self._fromFacade[field][SLOPE_] != m or \
                    self._fromFacade[field][OFFSET_] != n:
                     self.debug("Changes from the user, signal %s: "\
@@ -324,8 +332,8 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                     formulaExceptions[field] = e
                     self.warning("%s formula exception: %s"%(field,e))
             elif self.hasCandOs(field):
-                c = float(self._facadeAttrWidgets[field][COUPLE_].value())
-                o = float(self._facadeAttrWidgets[field][OFFSET_].value())
+                c = float(self._facadeAttrWidgets[field][COUPLE_].text())
+                o = float(self._facadeAttrWidgets[field][OFFSET_].text())
                 if self._fromFacade[field][COUPLE_] != c or \
                    self._fromFacade[field][OFFSET_] != o:
                     self.debug("Changes from the user, signal %s: "\
@@ -402,8 +410,8 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                 self.debug("Information to the user, signal %s: m = %g, n = %g"
                            %(field,m,n))
                 if self._facadeAttrWidgets.has_key(field):
-                    self._facadeAttrWidgets[field][SLOPE_].setValue(m)
-                    self._facadeAttrWidgets[field][OFFSET_].setValue(n)
+                    self._facadeAttrWidgets[field][SLOPE_].setText("%g"%m)
+                    self._facadeAttrWidgets[field][OFFSET_].setText("%g"%n)
             if self._fromFacade[field].has_key(COUPLE_) and \
                self._fromFacade[field].has_key(OFFSET_):
                 c = self._fromFacade[field][COUPLE_]
@@ -411,8 +419,8 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                 self.debug("Information to the user, signal %s: c = %g, o = %g"
                            %(field,c,o))
                 if self._facadeAttrWidgets.has_key(field):
-                    self._facadeAttrWidgets[field][COUPLE_].setValue(c)
-                    self._facadeAttrWidgets[field][OFFSET_].setValue(o)
+                    self._facadeAttrWidgets[field][COUPLE_].setText("%g"%c)
+                    self._facadeAttrWidgets[field][OFFSET_].setText("%g"%o)
         self._facadeAdjustments._ui.ShuntImpedanceValue.setText(\
                                                       self.getShuntImpedance())
 
