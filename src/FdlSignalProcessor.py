@@ -360,7 +360,12 @@ class SignalProcessor(FdlLogger,Qt.QObject):
         if SignalFields[signal].has_key(FORMULA_) and \
                                                  not self._isFacadeFit(signal):
             #if any of the dependencies is NOT facade fit
-            signalDependencies = copy(SignalFields[signal][DEPEND_])
+            if SignalFields[signal].has_key(DEPEND_):
+                signalDependencies = copy(SignalFields[signal][DEPEND_])
+            else:
+                self.debug("Signal %s doesn't have dependencies: %s"
+                           %(signal,SignalFields[signal]))
+                return True
             for i,aDependency in enumerate(signalDependencies):
                 #FIXME: this is risky without a nesting control
                 if self._isFormula(aDependency) or \

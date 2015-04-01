@@ -349,7 +349,8 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
                     formulaExceptions[field] = e
                     self.warning("%s formula exception: %s"%(field,e))
                     traceback.print_exc()
-        ShuntImpedance =self._facadeAdjustments._ui.ShuntImpedanceValue.text()
+        ShuntImpedance = \
+                    str(self._facadeAdjustments._ui.ShuntImpedanceValue.text())
         if ShuntImpedance != self.getShuntImpedance():
             self.debug("Changed the Shunt Impedance from %s to %s"
                       %(self.getShuntImpedance(),ShuntImpedance))
@@ -472,13 +473,14 @@ class FacadeManager(FdlLogger,Qt.QWidget):#Object):
         if len(fileName) == 0:
             return
         toSave = ""
-        ShuntImpedance = self._facadeAdjustments._ui.ShuntImpedanceValue.text()
+        ShuntImpedance = \
+                    str(self._facadeAdjustments._ui.ShuntImpedanceValue.text())
         toSave = ''.join("ShuntImpedance:%s\n"%(ShuntImpedance))
         for vble in self._facadeAttrWidgets.keys():
             for element in self._facadeAttrWidgets[vble].keys():
                 widget = self._facadeAttrWidgets[vble][element]
                 if type(widget) == QtGui.QLineEdit:
-                    value = widget.text()
+                    value = str(widget.text())
                 elif type(widget) == QtGui.QDoubleSpinBox:
                     value = widget.value()
                 else:
